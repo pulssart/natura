@@ -8,12 +8,44 @@ const isWeb = typeof window !== 'undefined';
 const imageUrlToBase64 = async (url: string): Promise<string> => {
   if (isWeb) {
     try {
+      // Vérifier si c'est déjà en base64
+      if (url.startsWith('data:image/')) {
+        return url;
+      }
+      
+      // Vérifier si c'est une URL valide d'image
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        console.warn('URL invalide, utilisation directe:', url);
+        return url;
+      }
+      
       const response = await fetch(url);
+      
+      // Vérifier que c'est bien une image
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.startsWith('image/')) {
+        console.error('La réponse n\'est pas une image, content-type:', contentType);
+        // Si ce n'est pas une image, on garde l'URL originale
+        return url;
+      }
+      
       const blob = await response.blob();
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          // Vérifier que le résultat est bien une image en base64
+          if (result.startsWith('data:image/')) {
+            resolve(result);
+          } else {
+            console.error('Le résultat n\'est pas une image base64:', result.substring(0, 100));
+            resolve(url); // Fallback sur l'URL originale
+          }
+        };
+        reader.onerror = () => {
+          console.error('Erreur FileReader');
+          resolve(url); // Fallback sur l'URL originale
+        };
         reader.readAsDataURL(blob);
       });
     } catch (error) {
@@ -29,16 +61,15 @@ export const saveCreation = async (creation: Omit<BotanicalCreation, 'id' | 'cre
   const id = Date.now().toString();
   const createdAt = new Date().toISOString();
   
-  // Sur le web, convertir l'image en base64 pour le stockage
+  // Sur le web, on garde l'URL originale (les URLs OpenAI sont accessibles)
+  // La conversion en base64 peut échouer si l'URL nécessite des en-têtes spéciaux
   let imageUri = creation.imageUri;
-  if (isWeb) {
-    try {
-      imageUri = await imageUrlToBase64(creation.imageUri);
-      console.log('Image convertie en base64, longueur:', imageUri.length);
-    } catch (error) {
-      console.error('Erreur conversion base64, utilisation URL originale:', error);
-      // En cas d'erreur, on garde l'URL originale
-    }
+  
+  // Si c'est déjà en base64, on le garde tel quel
+  if (isWeb && !imageUri.startsWith('data:image/') && imageUri.startsWith('http')) {
+    // Pour les URLs HTTP, on les garde telles quelles
+    // Les URLs OpenAI devraient être accessibles depuis le navigateur
+    console.log('Conservation de l\'URL originale pour le web:', imageUri.substring(0, 50) + '...');
   }
   
   const fullCreation: BotanicalCreation = {
