@@ -94,8 +94,9 @@ export const generateBotanicalIllustration = async (
   }
 
   const prompt = `Illustration botanique scientifique au crayon et crayon de couleur, style botaniste classique, très détaillée et précise, représentant ${analysis.commonName} (${analysis.scientificName}). 
-  Style: dessin naturaliste au crayon graphite avec touches de couleur au crayon de couleur, fond blanc, format A4 portrait, haute qualité, prêt pour l'impression. 
-  Caractéristiques à représenter: ${analysis.characteristics}`;
+  Style: dessin naturaliste au crayon graphite avec touches de couleur au crayon de couleur, fond blanc uni et propre sans aucune texture papier, format A4 portrait, haute qualité, prêt pour l'impression. 
+  Caractéristiques à représenter: ${analysis.characteristics}.
+  Important: fond complètement blanc et lisse, pas de texture de papier, pas de grain, pas de bruit.`;
 
   // GPT Image 1.5 - paramètres de base
   // Tailles supportées: 1024x1024, 1024x1536, 1536x1024, ou "auto"

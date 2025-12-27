@@ -50,53 +50,34 @@ export default function DetailScreen() {
                   size: A4;
                   margin: 0;
                 }
-                body {
+                * {
                   margin: 0;
-                  padding: 20px;
-                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                  padding: 0;
+                  box-sizing: border-box;
+                }
+                html, body {
+                  width: 100%;
+                  height: 100%;
+                  margin: 0;
+                  padding: 0;
                 }
                 .image-container {
                   width: 100%;
-                  text-align: center;
-                  margin-bottom: 20px;
+                  height: 100%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
                 }
                 .image-container img {
                   max-width: 100%;
-                  height: auto;
-                  page-break-inside: avoid;
-                }
-                .legend {
-                  margin-top: 20px;
-                  padding: 20px;
-                  border-top: 2px solid #2d5016;
-                }
-                .common-name {
-                  font-size: 28px;
-                  font-weight: bold;
-                  color: #2d5016;
-                  margin-bottom: 8px;
-                }
-                .scientific-name {
-                  font-size: 18px;
-                  font-style: italic;
-                  color: #666;
-                  margin-bottom: 12px;
-                }
-                .description {
-                  font-size: 14px;
-                  color: #333;
-                  line-height: 1.6;
+                  max-height: 100%;
+                  object-fit: contain;
                 }
               </style>
             </head>
             <body>
               <div class="image-container">
                 <img src="${localUri}" alt="${commonName}" />
-              </div>
-              <div class="legend">
-                <div class="common-name">${commonName}</div>
-                <div class="scientific-name">${scientificName}</div>
-                <div class="description">${description}</div>
               </div>
             </body>
           </html>
