@@ -241,8 +241,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 7,
+    paddingLeft: 7,
+    paddingRight: 31,
     paddingVertical: 2,
+    height: 100,
     backgroundColor: 'rgba(255, 255, 255, 0.95)', // Blanc légèrement transparent
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(76, 175, 80, 0.2)', // Vert doux
@@ -257,12 +259,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     height: 73,
     width: 168,
+    textAlign: 'left',
   },
   logo: {
     height: 73,
     width: 173,
     paddingTop: 0,
     paddingBottom: 0,
+    textAlign: 'left',
   },
   content: {
     padding: 24,
