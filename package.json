@@ -8,7 +8,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:web": "npx expo export --platform web",
-    "prebuild": "expo prebuild --clean"
+    "prebuild": "expo prebuild --clean",
+    "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
