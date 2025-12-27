@@ -106,10 +106,13 @@ export default function DetailScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        bounces={false}
       >
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: imageUri as string }}
+            source={{ 
+              uri: imageUri as string,
+            }}
             style={styles.image}
             resizeMode="contain"
           />
@@ -177,26 +180,19 @@ const styles = StyleSheet.create({
     width: 40,
   },
   scrollContent: {
-    padding: 24,
     paddingBottom: 100,
   },
   imageContainer: {
     width: '100%',
-    minHeight: 400,
+    height: height * 0.75, // 75% de la hauteur de l'écran pour un affichage plein écran
+    backgroundColor: '#fafafa',
     marginBottom: 28,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   image: {
     width: '100%',
     height: '100%',
-    minHeight: 400,
   },
   legend: {
     padding: 24,
@@ -209,6 +205,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 4,
+    marginHorizontal: 24,
   },
   commonName: {
     fontSize: 32,
