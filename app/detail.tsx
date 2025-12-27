@@ -70,24 +70,55 @@ export default function DetailScreen() {
                   height: 100%;
                   margin: 0;
                   padding: 0;
+                  font-family: 'Georgia', 'Times New Roman', serif;
                 }
-                .image-container {
+                .page {
                   width: 100%;
                   height: 100%;
                   display: flex;
+                  flex-direction: column;
+                  padding: 20px;
+                }
+                .image-container {
+                  flex: 1;
+                  display: flex;
                   align-items: center;
                   justify-content: center;
+                  overflow: hidden;
                 }
                 .image-container img {
                   max-width: 100%;
                   max-height: 100%;
                   object-fit: contain;
                 }
+                .legend {
+                  text-align: center;
+                  padding: 20px 0 10px 0;
+                  border-top: 1px solid #2d5016;
+                  margin-top: 15px;
+                }
+                .common-name {
+                  font-size: 24px;
+                  font-weight: bold;
+                  color: #2d5016;
+                  margin-bottom: 5px;
+                }
+                .scientific-name {
+                  font-size: 16px;
+                  font-style: italic;
+                  color: #666;
+                }
               </style>
             </head>
             <body>
-              <div class="image-container">
-                <img src="${localUri}" alt="${commonName}" />
+              <div class="page">
+                <div class="image-container">
+                  <img src="${localUri}" alt="${commonName}" />
+                </div>
+                <div class="legend">
+                  <div class="common-name">${commonName}</div>
+                  <div class="scientific-name">${scientificName}</div>
+                </div>
               </div>
             </body>
           </html>

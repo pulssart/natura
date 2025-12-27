@@ -77,23 +77,50 @@ export default function FavoritesScreen() {
     );
   };
 
+  const handleDelete = (creation: BotanicalCreation) => {
+    Alert.alert(
+      'Supprimer',
+      `Voulez-vous supprimer "${creation.commonName}" ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteCreation(creation.id);
+            loadCreations();
+          },
+        },
+      ]
+    );
+  };
+
   const renderItem = ({ item }: { item: BotanicalCreation }) => (
-    <TouchableOpacity
-      style={styles.item}
-      onPress={() => handlePress(item)}
-      onLongPress={() => handleLongPress(item)}
-      activeOpacity={0.7}
-    >
-      <Image source={{ uri: item.imageUri }} style={styles.itemImage} />
-      <View style={styles.itemOverlay}>
-        <Text style={styles.itemName} numberOfLines={2}>
-          {item.commonName}
-        </Text>
-        <Text style={styles.itemScientific} numberOfLines={1}>
-          {item.scientificName}
-        </Text>
-      </View>
-    </TouchableOpacity>
+    <View style={styles.item}>
+      <TouchableOpacity
+        style={styles.itemTouchable}
+        onPress={() => handlePress(item)}
+        onLongPress={() => handleLongPress(item)}
+        activeOpacity={0.7}
+      >
+        <Image source={{ uri: item.imageUri }} style={styles.itemImage} />
+        <View style={styles.itemOverlay}>
+          <Text style={styles.itemName} numberOfLines={2}>
+            {item.commonName}
+          </Text>
+          <Text style={styles.itemScientific} numberOfLines={1}>
+            {item.scientificName}
+          </Text>
+        </View>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => handleDelete(item)}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Ionicons name="close-circle" size={24} color="#ff4444" />
+      </TouchableOpacity>
+    </View>
   );
 
   if (creations.length === 0) {
@@ -171,6 +198,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    position: 'relative',
+  },
+  itemTouchable: {
+    flex: 1,
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 12,
+    padding: 2,
   },
   itemImage: {
     width: '100%',
