@@ -98,10 +98,11 @@ export const generateBotanicalIllustration = async (
   Caractéristiques à représenter: ${analysis.characteristics}`;
 
   // GPT Image 1.5 - paramètres de base
+  // Tailles supportées: 1024x1024, 1024x1536, 1536x1024, ou "auto"
   const requestBody: any = {
     model: GPT_IMAGE_1_5_MODEL,
     prompt,
-    size: '1024x1792', // Format portrait proche du A4
+    size: 'auto', // Le modèle choisit automatiquement la meilleure taille
   };
 
   const response = await fetch(`${OPENAI_API_BASE}/images/generations`, {
