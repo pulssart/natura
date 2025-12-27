@@ -28,7 +28,17 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
-      "output": "static"
+      "output": "static",
+      "name": "Natura",
+      "shortName": "Natura",
+      "lang": "fr",
+      "scope": "/",
+      "themeColor": "#2d5016",
+      "backgroundColor": "#fafafa",
+      "display": "standalone",
+      "orientation": "portrait",
+      "startUrl": "/",
+      "appleTouchIcon": "./assets/apple-touch-icon.png"
     },
     "plugins": [
       [
