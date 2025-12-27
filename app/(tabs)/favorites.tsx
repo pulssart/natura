@@ -105,11 +105,13 @@ export default function FavoritesScreen() {
 
     return (
       <View style={styles.item}>
-        <TouchableOpacity
-          style={styles.itemTouchable}
+        <Pressable
+          style={({ pressed }) => [
+            styles.itemTouchable,
+            pressed && styles.itemTouchablePressed
+          ]}
           onPress={() => handlePress(item)}
           onLongPress={() => handleLongPress(item)}
-          activeOpacity={0.7}
         >
           <Image source={{ uri: item.imageUri }} style={styles.itemImage} />
           <View style={styles.itemOverlay}>
@@ -120,13 +122,21 @@ export default function FavoritesScreen() {
               {item.scientificName}
             </Text>
           </View>
-        </TouchableOpacity>
+        </Pressable>
         <Pressable
           style={({ pressed }) => [
             styles.deleteButton,
             pressed && styles.deleteButtonPressed
           ]}
-          onPress={handleDeletePress}
+          onPress={(e) => {
+            // Empêcher la propagation
+            if (Platform.OS === 'web' && e) {
+              // @ts-ignore
+              e.nativeEvent?.stopPropagation?.();
+            }
+            console.log('Delete button pressed for:', item.id);
+            handleDeletePress();
+          }}
           hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
           // Sur le web, ajouter onClick natif pour intercepter les événements
           {...(Platform.OS === 'web' && {
@@ -224,6 +234,9 @@ const styles = StyleSheet.create({
   },
   itemTouchable: {
     flex: 1,
+  },
+  itemTouchablePressed: {
+    opacity: 0.7,
   },
   deleteButton: {
     position: 'absolute',
