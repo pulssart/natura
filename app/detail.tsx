@@ -94,28 +94,48 @@ export default function DetailScreen() {
         `);
         printDocument.close();
 
+        // Fonction pour lancer l'impression
+        const doPrint = () => {
+          try {
+            printFrame.contentWindow?.print();
+          } catch (e) {
+            console.error('Erreur impression:', e);
+          }
+          // Nettoyer l'iframe après l'impression
+          setTimeout(() => {
+            try {
+              document.body.removeChild(printFrame);
+            } catch (e) {
+              // Ignorer si déjà supprimé
+            }
+          }, 1000);
+          setLoading(false);
+        };
+
         // Attendre que l'image soit chargée avant d'imprimer
         const img = printDocument.querySelector('img');
         if (img) {
-          img.onload = () => {
-            printFrame.contentWindow?.print();
-            // Nettoyer l'iframe après l'impression
-            setTimeout(() => {
+          // Pour les images base64, elles peuvent être déjà chargées
+          if (img.complete && img.naturalHeight !== 0) {
+            // Image déjà chargée
+            setTimeout(doPrint, 100);
+          } else {
+            // Attendre le chargement
+            img.onload = doPrint;
+            img.onerror = () => {
+              Alert.alert('Erreur', 'Impossible de charger l\'image pour l\'impression');
               document.body.removeChild(printFrame);
-            }, 1000);
-            setLoading(false);
-          };
-          img.onerror = () => {
-            Alert.alert('Erreur', 'Impossible de charger l\'image pour l\'impression');
-            document.body.removeChild(printFrame);
-            setLoading(false);
-          };
+              setLoading(false);
+            };
+            // Timeout de sécurité au cas où onload ne se déclenche pas
+            setTimeout(() => {
+              if (img.complete || img.naturalHeight > 0) {
+                doPrint();
+              }
+            }, 2000);
+          }
         } else {
-          printFrame.contentWindow?.print();
-          setTimeout(() => {
-            document.body.removeChild(printFrame);
-          }, 1000);
-          setLoading(false);
+          doPrint();
         }
       } else {
         // Sur mobile, utiliser expo-print
