@@ -134,19 +134,13 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          {(() => {
-            try {
-              return (
-                <Image 
-                  source={require('../../assets/logo.png')} 
-                  style={styles.logo}
-                  resizeMode="contain"
-                />
-              );
-            } catch (e) {
-              return <Text style={styles.title}>Natura</Text>;
-            }
-          })()}
+          <View style={styles.logoContainer}>
+            <Image 
+              source={require('../../assets/logo.png')} 
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
           <TouchableOpacity onPress={() => setShowApiModal(true)}>
             <Ionicons name="settings-outline" size={24} color="#2E7D32" />
           </TouchableOpacity>
@@ -248,7 +242,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 20,
+    paddingVertical: 2,
     backgroundColor: 'rgba(255, 255, 255, 0.95)', // Blanc légèrement transparent
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(76, 175, 80, 0.2)', // Vert doux
@@ -258,9 +252,17 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
+  logoContainer: {
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    height: 73,
+    width: 168,
+  },
   logo: {
-    height: 40,
-    width: 180,
+    height: 73,
+    width: 204,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   content: {
     padding: 24,
