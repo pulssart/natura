@@ -12,6 +12,10 @@ export default function TabsLayout() {
           backgroundColor: '#f5f5f5',
           borderTopWidth: 1,
           borderTopColor: '#e0e0e0',
+          height: 65,
+        },
+        tabBarItemStyle: {
+          justifyContent: 'center',
         },
       }}
     >
