@@ -134,11 +134,19 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Image 
-            source={require('../../assets/logo.png')} 
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          {(() => {
+            try {
+              return (
+                <Image 
+                  source={require('../../assets/logo.png')} 
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+              );
+            } catch (e) {
+              return <Text style={styles.title}>Natura</Text>;
+            }
+          })()}
           <TouchableOpacity onPress={() => setShowApiModal(true)}>
             <Ionicons name="settings-outline" size={24} color="#2E7D32" />
           </TouchableOpacity>

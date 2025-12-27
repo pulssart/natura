@@ -1,6 +1,9 @@
 [build]
-  command = "npm run build:web"
+  command = "npm ci && npm run build:web"
   publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20.19.4"
 
 [[redirects]]
   from = "/*"
