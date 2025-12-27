@@ -180,7 +180,7 @@ export default function FavoritesScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.emptyContainer}>
-          <Ionicons name="bookmark-outline" size={64} color="#ccc" />
+          <Ionicons name="bookmark-outline" size={64} color="#81C784" />
           <Text style={styles.emptyText}>Aucune création sauvegardée</Text>
           <Text style={styles.emptySubtext}>
             Générez votre première illustration depuis l'écran d'accueil
@@ -215,30 +215,30 @@ export default function FavoritesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafafa',
+    backgroundColor: '#F1F8E9', // Jaune-vert pâle lumineux
   },
   header: {
     paddingHorizontal: 24,
     paddingVertical: 20,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderBottomWidth: 1,
-    borderBottomColor: '#e8e8e8',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    borderBottomColor: 'rgba(76, 175, 80, 0.2)',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
     elevation: 2,
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#2d5016',
+    color: '#2E7D32',
     marginBottom: 6,
     letterSpacing: -0.5,
   },
   count: {
     fontSize: 15,
-    color: '#666',
+    color: '#558B2F',
     fontWeight: '500',
   },
   list: {
@@ -252,19 +252,19 @@ const styles = StyleSheet.create({
     width: itemSize,
     height: itemSize * 1.2,
     marginBottom: 16,
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: 'visible',
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
     position: 'relative',
   },
   itemTouchable: {
     flex: 1,
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: 'hidden',
   },
   itemTouchablePressed: {
@@ -275,15 +275,15 @@ const styles = StyleSheet.create({
     top: 8,
     right: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 4,
     zIndex: 1000,
     elevation: 10,
     cursor: Platform.OS === 'web' ? 'pointer' : 'default',
-    shadowColor: '#000',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowRadius: 5,
   },
   deleteButtonPressed: {
     opacity: 0.7,
@@ -298,18 +298,18 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 12,
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
   },
   itemName: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: '#1B5E20',
     marginBottom: 4,
     letterSpacing: -0.2,
   },
   itemScientific: {
     fontSize: 12,
-    color: '#666',
+    color: '#558B2F',
     fontStyle: 'italic',
     fontWeight: '500',
   },
@@ -322,14 +322,14 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#666',
+    color: '#558B2F',
     marginTop: 20,
     marginBottom: 10,
     letterSpacing: -0.3,
   },
   emptySubtext: {
     fontSize: 15,
-    color: '#999',
+    color: '#81C784',
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 40,

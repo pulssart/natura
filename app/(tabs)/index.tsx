@@ -224,7 +224,8 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafafa',
+    // Dégradé doux jaune-vert vers aqua-vert (comme l'icône)
+    backgroundColor: '#F1F8E9', // Jaune-vert pâle lumineux
   },
   scrollContent: {
     flexGrow: 1,
@@ -236,19 +237,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 20,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)', // Blanc légèrement transparent
     borderBottomWidth: 1,
-    borderBottomColor: '#e8e8e8',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    borderBottomColor: 'rgba(76, 175, 80, 0.2)', // Vert doux
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
     elevation: 2,
   },
   title: {
     fontSize: 36,
     fontWeight: '700',
-    color: '#2d5016',
+    color: '#2E7D32', // Vert émeraude plus doux
     letterSpacing: -0.5,
   },
   content: {
@@ -257,31 +258,31 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: '#1B5E20', // Vert foncé naturel
     marginBottom: 8,
     letterSpacing: -0.3,
   },
   description: {
     fontSize: 16,
-    color: '#666',
+    color: '#558B2F', // Vert olive doux
     lineHeight: 24,
     marginBottom: 32,
   },
   textInput: {
     borderWidth: 1.5,
-    borderColor: '#e0e0e0',
-    borderRadius: 16,
+    borderColor: 'rgba(76, 175, 80, 0.3)', // Vert doux transparent
+    borderRadius: 18,
     padding: 18,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Blanc légèrement transparent
     minHeight: 120,
     textAlignVertical: 'top',
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   photoButtons: {
     flexDirection: 'row',
@@ -295,28 +296,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 16,
     paddingHorizontal: 20,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#4a7c59',
-    backgroundColor: '#fff',
+    borderColor: '#66BB6A', // Vert moyen doux
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     gap: 10,
-    shadowColor: '#2d5016',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
   },
   photoButtonActive: {
-    backgroundColor: '#2d5016',
-    borderColor: '#2d5016',
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
+    backgroundColor: '#4CAF50', // Vert émeraude
+    borderColor: '#2E7D32',
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
   },
   photoButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2d5016',
+    color: '#2E7D32',
     letterSpacing: 0.2,
   },
   photoButtonTextActive: {
@@ -325,13 +326,13 @@ const styles = StyleSheet.create({
   imagePreview: {
     position: 'relative',
     marginBottom: 20,
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
   },
   previewImage: {
     width: '100%',
@@ -355,21 +356,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2d5016',
+    backgroundColor: '#4CAF50', // Vert émeraude
     paddingVertical: 18,
     paddingHorizontal: 24,
-    borderRadius: 14,
+    borderRadius: 16,
     gap: 10,
     marginTop: 12,
-    shadowColor: '#2d5016',
+    shadowColor: '#2E7D32',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: 10,
     elevation: 6,
   },
   generateButtonDisabled: {
     opacity: 0.5,
-    backgroundColor: '#a5a5a5',
+    backgroundColor: '#BDBDBD', // Gris doux
     shadowOpacity: 0,
     elevation: 0,
   },
