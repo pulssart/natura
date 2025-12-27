@@ -123,29 +123,44 @@ export const generateBotanicalIllustration = async (
   }
 
   const data = await response.json();
-  console.log('Réponse API OpenAI (génération image):', JSON.stringify(data, null, 2));
+  console.log('Réponse API OpenAI (génération image) - clés:', Object.keys(data));
   
-  // GPT Image 1.5 peut retourner la structure différemment
-  let imageUrl: string | undefined;
+  // GPT Image 1.5 peut retourner soit une URL, soit du base64
+  let imageResult: string | undefined;
+  
   if (data.data && data.data[0]) {
-    imageUrl = data.data[0].url || data.data[0];
+    const imageData = data.data[0];
+    
+    // Cas 1: L'API retourne une URL
+    if (imageData.url) {
+      imageResult = imageData.url;
+      console.log('Image reçue sous forme d\'URL');
+    }
+    // Cas 2: L'API retourne du base64 (b64_json)
+    else if (imageData.b64_json) {
+      // Convertir le base64 en data URL pour l'affichage
+      imageResult = `data:image/png;base64,${imageData.b64_json}`;
+      console.log('Image reçue sous forme de base64, longueur:', imageData.b64_json.length);
+    }
   } else if (data.url) {
-    imageUrl = data.url;
+    imageResult = data.url;
+  } else if (data.b64_json) {
+    imageResult = `data:image/png;base64,${data.b64_json}`;
   }
   
-  if (!imageUrl) {
+  if (!imageResult) {
     console.error('Format de réponse inattendu:', data);
     throw new Error('Format de réponse inattendu de l\'API');
   }
   
-  // Vérifier que c'est bien une URL HTTP valide
-  if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-    console.error('URL invalide retournée par l\'API:', imageUrl);
-    throw new Error('URL d\'image invalide retournée par l\'API');
+  // Vérifier que c'est bien une URL HTTP valide ou une image base64
+  if (!imageResult.startsWith('http://') && !imageResult.startsWith('https://') && !imageResult.startsWith('data:image/')) {
+    console.error('Format d\'image invalide retourné par l\'API:', imageResult.substring(0, 100));
+    throw new Error('Format d\'image invalide retourné par l\'API');
   }
   
-  console.log('URL d\'image générée:', imageUrl);
-  return imageUrl;
+  console.log('Image générée avec succès, type:', imageResult.startsWith('data:') ? 'base64' : 'URL');
+  return imageResult;
 };
 
 // Convertir une image locale en base64
