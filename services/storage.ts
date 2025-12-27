@@ -64,35 +64,44 @@ const migrateFromLocalStorage = async (): Promise<void> => {
   if (!isWeb) return;
   
   try {
+    // Nettoyer le localStorage pour éviter les erreurs de quota
+    // Les anciennes données corrompues seront supprimées
     const oldData = localStorage.getItem(STORAGE_KEY_CREATIONS);
     if (oldData) {
-      const creations = JSON.parse(oldData);
-      if (Array.isArray(creations) && creations.length > 0) {
-        console.log(`Migration de ${creations.length} création(s) de localStorage vers IndexedDB...`);
-        
-        const db = await openDB();
-        const transaction = db.transaction(STORE_CREATIONS, 'readwrite');
-        const store = transaction.objectStore(STORE_CREATIONS);
-        
-        for (const creation of creations) {
-          // Vérifier que la création est valide avant de migrer
-          if (creation.imageUri && 
-              (creation.imageUri.startsWith('data:image/') || 
-               creation.imageUri.startsWith('http://') || 
-               creation.imageUri.startsWith('https://'))) {
-            store.put(creation);
+      try {
+        const creations = JSON.parse(oldData);
+        if (Array.isArray(creations) && creations.length > 0) {
+          console.log(`Migration de ${creations.length} création(s) de localStorage vers IndexedDB...`);
+          
+          const db = await openDB();
+          const transaction = db.transaction(STORE_CREATIONS, 'readwrite');
+          const store = transaction.objectStore(STORE_CREATIONS);
+          
+          for (const creation of creations) {
+            // Vérifier que la création est valide avant de migrer
+            if (creation.imageUri && 
+                (creation.imageUri.startsWith('data:image/') || 
+                 creation.imageUri.startsWith('http://') || 
+                 creation.imageUri.startsWith('https://'))) {
+              store.put(creation);
+            }
           }
+          
+          await new Promise<void>((resolve, reject) => {
+            transaction.oncomplete = () => {
+              console.log('Migration terminée');
+              resolve();
+            };
+            transaction.onerror = () => reject(transaction.error);
+          });
         }
-        
-        await new Promise<void>((resolve, reject) => {
-          transaction.oncomplete = () => {
-            console.log('Migration terminée, suppression des anciennes données...');
-            localStorage.removeItem(STORAGE_KEY_CREATIONS);
-            resolve();
-          };
-          transaction.onerror = () => reject(transaction.error);
-        });
+      } catch (parseError) {
+        console.error('Erreur parsing localStorage:', parseError);
       }
+      
+      // Toujours supprimer localStorage après migration (même si erreur)
+      console.log('Suppression des anciennes données localStorage...');
+      localStorage.removeItem(STORAGE_KEY_CREATIONS);
     }
     
     // Migrer la clé API aussi
@@ -104,6 +113,13 @@ const migrateFromLocalStorage = async (): Promise<void> => {
     }
   } catch (error) {
     console.error('Erreur lors de la migration:', error);
+    // En cas d'erreur, supprimer quand même localStorage pour éviter les problèmes de quota
+    try {
+      localStorage.removeItem(STORAGE_KEY_CREATIONS);
+      localStorage.removeItem(STORAGE_KEY_API_KEY);
+    } catch (e) {
+      // Ignorer
+    }
   }
 };
 
