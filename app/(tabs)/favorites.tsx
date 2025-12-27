@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Pressable,
   Image,
   RefreshControl,
   Dimensions,
@@ -96,51 +97,53 @@ export default function FavoritesScreen() {
     );
   };
 
-  const renderItem = ({ item }: { item: BotanicalCreation }) => (
-    <View style={styles.item}>
-      <TouchableOpacity
-        style={styles.itemTouchable}
-        onPress={() => handlePress(item)}
-        onLongPress={() => handleLongPress(item)}
-        activeOpacity={0.7}
-      >
-        <Image source={{ uri: item.imageUri }} style={styles.itemImage} />
-        <View style={styles.itemOverlay}>
-          <Text style={styles.itemName} numberOfLines={2}>
-            {item.commonName}
-          </Text>
-          <Text style={styles.itemScientific} numberOfLines={1}>
-            {item.scientificName}
-          </Text>
-        </View>
-      </TouchableOpacity>
-      {Platform.OS === 'web' ? (
-        <View
-          style={styles.deleteButton}
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            console.log('Delete button clicked (web) for:', item.id);
-            handleDelete(item);
-          }}
-        >
-          <Ionicons name="close-circle" size={24} color="#ff4444" />
-        </View>
-      ) : (
+  const renderItem = ({ item }: { item: BotanicalCreation }) => {
+    const handleDeletePress = () => {
+      console.log('Delete button pressed for:', item.id);
+      handleDelete(item);
+    };
+
+    return (
+      <View style={styles.item}>
         <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => {
-            console.log('Delete button pressed (native) for:', item.id);
-            handleDelete(item);
-          }}
+          style={styles.itemTouchable}
+          onPress={() => handlePress(item)}
+          onLongPress={() => handleLongPress(item)}
           activeOpacity={0.7}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Image source={{ uri: item.imageUri }} style={styles.itemImage} />
+          <View style={styles.itemOverlay}>
+            <Text style={styles.itemName} numberOfLines={2}>
+              {item.commonName}
+            </Text>
+            <Text style={styles.itemScientific} numberOfLines={1}>
+              {item.scientificName}
+            </Text>
+          </View>
+        </TouchableOpacity>
+        <Pressable
+          style={({ pressed }) => [
+            styles.deleteButton,
+            pressed && styles.deleteButtonPressed
+          ]}
+          onPress={handleDeletePress}
+          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          // Sur le web, ajouter onClick natif pour intercepter les événements
+          {...(Platform.OS === 'web' && {
+            // @ts-ignore - onClick est disponible sur le web
+            onClick: (e: any) => {
+              e?.stopPropagation?.();
+              e?.preventDefault?.();
+              console.log('Delete clicked (web onClick) for:', item.id);
+              handleDeletePress();
+            },
+          })}
         >
           <Ionicons name="close-circle" size={24} color="#ff4444" />
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+        </Pressable>
+      </View>
+    );
+  };
 
   if (creations.length === 0) {
     return (
@@ -229,9 +232,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     padding: 2,
-    zIndex: 10,
-    elevation: 5,
+    zIndex: 1000,
+    elevation: 10,
     cursor: Platform.OS === 'web' ? 'pointer' : 'default',
+  },
+  deleteButtonPressed: {
+    opacity: 0.6,
+    transform: [{ scale: 0.9 }],
   },
   itemImage: {
     width: '100%',
