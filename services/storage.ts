@@ -4,112 +4,120 @@ import { STORAGE_KEY_CREATIONS, STORAGE_KEY_API_KEY } from '../utils/constants';
 // Détecter si on est sur le web
 const isWeb = typeof window !== 'undefined';
 
-// Convertir une URL d'image en base64 pour le stockage web
-const imageUrlToBase64 = async (url: string): Promise<string> => {
-  if (isWeb) {
-    try {
-      // Vérifier si c'est déjà en base64
-      if (url.startsWith('data:image/')) {
-        return url;
-      }
-      
-      // Vérifier si c'est une URL valide d'image
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        console.warn('URL invalide, utilisation directe:', url);
-        return url;
-      }
-      
-      const response = await fetch(url);
-      
-      // Vérifier que c'est bien une image
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.startsWith('image/')) {
-        console.error('La réponse n\'est pas une image, content-type:', contentType);
-        // Si ce n'est pas une image, on garde l'URL originale
-        return url;
-      }
-      
-      const blob = await response.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          // Vérifier que le résultat est bien une image en base64
-          if (result.startsWith('data:image/')) {
-            resolve(result);
-          } else {
-            console.error('Le résultat n\'est pas une image base64:', result.substring(0, 100));
-            resolve(url); // Fallback sur l'URL originale
-          }
-        };
-        reader.onerror = () => {
-          console.error('Erreur FileReader');
-          resolve(url); // Fallback sur l'URL originale
-        };
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      console.error('Error converting image to base64:', error);
-      return url; // Fallback sur l'URL originale
-    }
+// ============================================
+// IndexedDB pour le web (stockage illimité)
+// ============================================
+
+const DB_NAME = 'NaturaDB';
+const DB_VERSION = 1;
+const STORE_CREATIONS = 'creations';
+const STORE_SETTINGS = 'settings';
+
+let dbPromise: Promise<IDBDatabase> | null = null;
+
+// Ouvrir la base de données IndexedDB
+const openDB = (): Promise<IDBDatabase> => {
+  if (!isWeb) {
+    return Promise.reject(new Error('IndexedDB n\'est pas disponible'));
   }
-  return url;
+  
+  if (dbPromise) {
+    return dbPromise;
+  }
+  
+  dbPromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    
+    request.onerror = () => {
+      console.error('Erreur ouverture IndexedDB:', request.error);
+      reject(request.error);
+    };
+    
+    request.onsuccess = () => {
+      console.log('IndexedDB ouverte avec succès');
+      resolve(request.result);
+    };
+    
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      
+      // Créer le store pour les créations
+      if (!db.objectStoreNames.contains(STORE_CREATIONS)) {
+        const store = db.createObjectStore(STORE_CREATIONS, { keyPath: 'id' });
+        store.createIndex('createdAt', 'createdAt', { unique: false });
+        console.log('Store "creations" créé');
+      }
+      
+      // Créer le store pour les paramètres (clé API, etc.)
+      if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
+        db.createObjectStore(STORE_SETTINGS, { keyPath: 'key' });
+        console.log('Store "settings" créé');
+      }
+    };
+  });
+  
+  return dbPromise;
 };
 
-// Sauvegarder une création
-export const saveCreation = async (creation: Omit<BotanicalCreation, 'id' | 'createdAt'>): Promise<BotanicalCreation> => {
-  const id = Date.now().toString();
-  const createdAt = new Date().toISOString();
+// Migration des données de localStorage vers IndexedDB
+const migrateFromLocalStorage = async (): Promise<void> => {
+  if (!isWeb) return;
   
-  // Sur le web, on garde l'URL originale (les URLs OpenAI sont accessibles)
-  // La conversion en base64 peut échouer si l'URL nécessite des en-têtes spéciaux
-  let imageUri = creation.imageUri;
-  
-  // Valider que l'URL est valide
-  if (!imageUri) {
-    throw new Error('imageUri est requis pour sauvegarder une création');
+  try {
+    const oldData = localStorage.getItem(STORAGE_KEY_CREATIONS);
+    if (oldData) {
+      const creations = JSON.parse(oldData);
+      if (Array.isArray(creations) && creations.length > 0) {
+        console.log(`Migration de ${creations.length} création(s) de localStorage vers IndexedDB...`);
+        
+        const db = await openDB();
+        const transaction = db.transaction(STORE_CREATIONS, 'readwrite');
+        const store = transaction.objectStore(STORE_CREATIONS);
+        
+        for (const creation of creations) {
+          // Vérifier que la création est valide avant de migrer
+          if (creation.imageUri && 
+              (creation.imageUri.startsWith('data:image/') || 
+               creation.imageUri.startsWith('http://') || 
+               creation.imageUri.startsWith('https://'))) {
+            store.put(creation);
+          }
+        }
+        
+        await new Promise<void>((resolve, reject) => {
+          transaction.oncomplete = () => {
+            console.log('Migration terminée, suppression des anciennes données...');
+            localStorage.removeItem(STORAGE_KEY_CREATIONS);
+            resolve();
+          };
+          transaction.onerror = () => reject(transaction.error);
+        });
+      }
+    }
+    
+    // Migrer la clé API aussi
+    const oldApiKey = localStorage.getItem(STORAGE_KEY_API_KEY);
+    if (oldApiKey) {
+      await saveApiKey(oldApiKey);
+      localStorage.removeItem(STORAGE_KEY_API_KEY);
+      console.log('Clé API migrée vers IndexedDB');
+    }
+  } catch (error) {
+    console.error('Erreur lors de la migration:', error);
   }
-  
-  // Vérifier que ce n'est pas du HTML
-  if (imageUri.startsWith('data:text/html')) {
-    console.error('Tentative de sauvegarder une URL HTML invalide:', imageUri.substring(0, 100));
-    throw new Error('URL d\'image invalide: ne peut pas être du HTML');
-  }
-  
-  // Vérifier que c'est une URL HTTP/HTTPS valide ou une image base64
-  const isValidUrl = 
-    imageUri.startsWith('http://') || 
-    imageUri.startsWith('https://') ||
-    imageUri.startsWith('data:image/');
-  
-  if (!isValidUrl) {
-    console.error('URL invalide:', imageUri.substring(0, 100));
-    throw new Error('URL d\'image invalide: doit être une URL HTTP/HTTPS ou une image base64');
-  }
-  
-  console.log('Sauvegarde d\'une création avec URL valide:', imageUri.substring(0, 50) + '...');
-  
-  const fullCreation: BotanicalCreation = {
-    ...creation,
-    id,
-    imageUri,
-    createdAt,
-  };
-  
-  // Sauvegarder dans localStorage (web) ou AsyncStorage (mobile)
-  const creations = await getCreations();
-  creations.push(fullCreation);
-  
-  if (isWeb) {
-    localStorage.setItem(STORAGE_KEY_CREATIONS, JSON.stringify(creations));
-    console.log('Création sauvegardée dans localStorage, total:', creations.length);
-  } else {
-    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-    await AsyncStorage.setItem(STORAGE_KEY_CREATIONS, JSON.stringify(creations));
-  }
-  
-  return fullCreation;
 };
+
+// Initialiser IndexedDB et migrer les données
+let migrationDone = false;
+const ensureMigration = async (): Promise<void> => {
+  if (!isWeb || migrationDone) return;
+  migrationDone = true;
+  await migrateFromLocalStorage();
+};
+
+// ============================================
+// Fonctions de stockage
+// ============================================
 
 // Nettoyer les créations avec des URLs invalides
 const cleanInvalidCreations = (creations: BotanicalCreation[]): BotanicalCreation[] => {
@@ -140,37 +148,99 @@ const cleanInvalidCreations = (creations: BotanicalCreation[]): BotanicalCreatio
   });
 };
 
+// Sauvegarder une création
+export const saveCreation = async (creation: Omit<BotanicalCreation, 'id' | 'createdAt'>): Promise<BotanicalCreation> => {
+  const id = Date.now().toString();
+  const createdAt = new Date().toISOString();
+  
+  let imageUri = creation.imageUri;
+  
+  // Valider que l'URL est valide
+  if (!imageUri) {
+    throw new Error('imageUri est requis pour sauvegarder une création');
+  }
+  
+  // Vérifier que ce n'est pas du HTML
+  if (imageUri.startsWith('data:text/html')) {
+    console.error('Tentative de sauvegarder une URL HTML invalide:', imageUri.substring(0, 100));
+    throw new Error('URL d\'image invalide: ne peut pas être du HTML');
+  }
+  
+  // Vérifier que c'est une URL HTTP/HTTPS valide ou une image base64
+  const isValidUrl = 
+    imageUri.startsWith('http://') || 
+    imageUri.startsWith('https://') ||
+    imageUri.startsWith('data:image/');
+  
+  if (!isValidUrl) {
+    console.error('URL invalide:', imageUri.substring(0, 100));
+    throw new Error('URL d\'image invalide: doit être une URL HTTP/HTTPS ou une image base64');
+  }
+  
+  const fullCreation: BotanicalCreation = {
+    ...creation,
+    id,
+    imageUri,
+    createdAt,
+  };
+  
+  if (isWeb) {
+    await ensureMigration();
+    const db = await openDB();
+    
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_CREATIONS, 'readwrite');
+      const store = transaction.objectStore(STORE_CREATIONS);
+      const request = store.add(fullCreation);
+      
+      request.onsuccess = () => {
+        console.log('Création sauvegardée dans IndexedDB:', fullCreation.id);
+        resolve(fullCreation);
+      };
+      request.onerror = () => {
+        console.error('Erreur sauvegarde IndexedDB:', request.error);
+        reject(request.error);
+      };
+    });
+  } else {
+    // Mobile: utiliser AsyncStorage
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    const creations = await getCreations();
+    creations.push(fullCreation);
+    await AsyncStorage.setItem(STORAGE_KEY_CREATIONS, JSON.stringify(creations));
+    return fullCreation;
+  }
+};
+
 // Récupérer toutes les créations
 export const getCreations = async (): Promise<BotanicalCreation[]> => {
   try {
     if (isWeb) {
-      const data = localStorage.getItem(STORAGE_KEY_CREATIONS);
-      if (!data) {
-        console.log('Aucune donnée dans localStorage');
-        return [];
-      }
-      const creations = JSON.parse(data);
-      console.log('Créations récupérées depuis localStorage:', creations.length);
+      await ensureMigration();
+      const db = await openDB();
       
-      // Nettoyer les créations invalides
-      const cleanedCreations = cleanInvalidCreations(creations);
-      if (cleanedCreations.length !== creations.length) {
-        console.log(`Nettoyage: ${creations.length - cleanedCreations.length} création(s) invalide(s) supprimée(s)`);
-        // Sauvegarder les créations nettoyées
-        localStorage.setItem(STORAGE_KEY_CREATIONS, JSON.stringify(cleanedCreations));
-      }
-      
-      return cleanedCreations;
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_CREATIONS, 'readonly');
+        const store = transaction.objectStore(STORE_CREATIONS);
+        const request = store.getAll();
+        
+        request.onsuccess = () => {
+          const creations = request.result || [];
+          console.log('Créations récupérées depuis IndexedDB:', creations.length);
+          const cleanedCreations = cleanInvalidCreations(creations);
+          resolve(cleanedCreations);
+        };
+        request.onerror = () => {
+          console.error('Erreur lecture IndexedDB:', request.error);
+          reject(request.error);
+        };
+      });
     } else {
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
       const data = await AsyncStorage.getItem(STORAGE_KEY_CREATIONS);
       if (!data) return [];
       const creations = JSON.parse(data);
-      const cleanedCreations = cleanInvalidCreations(creations);
-      if (cleanedCreations.length !== creations.length) {
-        await AsyncStorage.setItem(STORAGE_KEY_CREATIONS, JSON.stringify(cleanedCreations));
-      }
-      return cleanedCreations;
+      return cleanInvalidCreations(creations);
     }
   } catch (error) {
     console.error('Error getting creations:', error);
@@ -180,13 +250,28 @@ export const getCreations = async (): Promise<BotanicalCreation[]> => {
 
 // Supprimer une création
 export const deleteCreation = async (id: string): Promise<void> => {
-  const creations = await getCreations();
-  const filtered = creations.filter(c => c.id !== id);
-  
   if (isWeb) {
-    localStorage.setItem(STORAGE_KEY_CREATIONS, JSON.stringify(filtered));
+    await ensureMigration();
+    const db = await openDB();
+    
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_CREATIONS, 'readwrite');
+      const store = transaction.objectStore(STORE_CREATIONS);
+      const request = store.delete(id);
+      
+      request.onsuccess = () => {
+        console.log('Création supprimée de IndexedDB:', id);
+        resolve();
+      };
+      request.onerror = () => {
+        console.error('Erreur suppression IndexedDB:', request.error);
+        reject(request.error);
+      };
+    });
   } else {
     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    const creations = await getCreations();
+    const filtered = creations.filter(c => c.id !== id);
     await AsyncStorage.setItem(STORAGE_KEY_CREATIONS, JSON.stringify(filtered));
   }
 };
@@ -194,7 +279,22 @@ export const deleteCreation = async (id: string): Promise<void> => {
 // Obtenir la clé API
 export const getApiKey = async (): Promise<string | null> => {
   if (isWeb) {
-    return localStorage.getItem(STORAGE_KEY_API_KEY);
+    await ensureMigration();
+    const db = await openDB();
+    
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_SETTINGS, 'readonly');
+      const store = transaction.objectStore(STORE_SETTINGS);
+      const request = store.get('apiKey');
+      
+      request.onsuccess = () => {
+        resolve(request.result?.value || null);
+      };
+      request.onerror = () => {
+        console.error('Erreur lecture clé API:', request.error);
+        reject(request.error);
+      };
+    });
   } else {
     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
     return await AsyncStorage.getItem(STORAGE_KEY_API_KEY);
@@ -204,29 +304,49 @@ export const getApiKey = async (): Promise<string | null> => {
 // Sauvegarder la clé API
 export const saveApiKey = async (apiKey: string): Promise<void> => {
   if (isWeb) {
-    localStorage.setItem(STORAGE_KEY_API_KEY, apiKey);
+    await ensureMigration();
+    const db = await openDB();
+    
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_SETTINGS, 'readwrite');
+      const store = transaction.objectStore(STORE_SETTINGS);
+      const request = store.put({ key: 'apiKey', value: apiKey });
+      
+      request.onsuccess = () => {
+        console.log('Clé API sauvegardée dans IndexedDB');
+        resolve();
+      };
+      request.onerror = () => {
+        console.error('Erreur sauvegarde clé API:', request.error);
+        reject(request.error);
+      };
+    });
   } else {
     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
     await AsyncStorage.setItem(STORAGE_KEY_API_KEY, apiKey);
   }
 };
 
-// Nettoyer toutes les créations invalides (utile pour corriger les données corrompues)
+// Nettoyer toutes les créations invalides
 export const cleanAllInvalidCreations = async (): Promise<number> => {
   const creations = await getCreations();
   const beforeCount = creations.length;
   const cleaned = cleanInvalidCreations(creations);
   const removedCount = beforeCount - cleaned.length;
   
-  if (removedCount > 0) {
-    if (isWeb) {
-      localStorage.setItem(STORAGE_KEY_CREATIONS, JSON.stringify(cleaned));
-    } else {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      await AsyncStorage.setItem(STORAGE_KEY_CREATIONS, JSON.stringify(cleaned));
+  if (removedCount > 0 && isWeb) {
+    const db = await openDB();
+    const transaction = db.transaction(STORE_CREATIONS, 'readwrite');
+    const store = transaction.objectStore(STORE_CREATIONS);
+    
+    // Supprimer toutes les créations invalides
+    const allCreations = await getCreations();
+    for (const creation of allCreations) {
+      if (!cleaned.find(c => c.id === creation.id)) {
+        store.delete(creation.id);
+      }
     }
   }
   
   return removedCount;
 };
-
