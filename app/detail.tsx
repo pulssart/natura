@@ -24,205 +24,6 @@ export default function DetailScreen() {
 
   const { id, imageUri, commonName, scientificName, description } = params;
 
-  const handlePrint = async () => {
-    if (!imageUri) return;
-
-    setLoading(true);
-    try {
-      let localUri = imageUri as string;
-      
-      if (isWeb) {
-        // Sur le web, utiliser un iframe caché pour imprimer sans quitter la page
-        const printFrame = document.createElement('iframe');
-        printFrame.style.position = 'absolute';
-        printFrame.style.top = '-9999px';
-        printFrame.style.left = '-9999px';
-        printFrame.style.width = '0';
-        printFrame.style.height = '0';
-        printFrame.style.border = 'none';
-        document.body.appendChild(printFrame);
-
-        const printDocument = printFrame.contentDocument || printFrame.contentWindow?.document;
-        if (!printDocument) {
-          Alert.alert('Erreur', 'Impossible de créer le document d\'impression');
-          document.body.removeChild(printFrame);
-          setLoading(false);
-          return;
-        }
-
-        printDocument.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <style>
-                @page {
-                  size: A4;
-                  margin: 0;
-                }
-                * {
-                  margin: 0;
-                  padding: 0;
-                  box-sizing: border-box;
-                }
-                html, body {
-                  width: 100%;
-                  height: 100%;
-                  margin: 0;
-                  padding: 0;
-                  font-family: 'Georgia', 'Times New Roman', serif;
-                }
-                .page {
-                  width: 100%;
-                  height: 100%;
-                  display: flex;
-                  flex-direction: column;
-                  padding: 20px;
-                }
-                .image-container {
-                  flex: 1;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  overflow: hidden;
-                }
-                .image-container img {
-                  max-width: 100%;
-                  max-height: 100%;
-                  object-fit: contain;
-                }
-                .legend {
-                  text-align: center;
-                  padding: 20px 0 10px 0;
-                  border-top: 1px solid #2d5016;
-                  margin-top: 15px;
-                }
-                .common-name {
-                  font-size: 24px;
-                  font-weight: bold;
-                  color: #2d5016;
-                  margin-bottom: 5px;
-                }
-                .scientific-name {
-                  font-size: 16px;
-                  font-style: italic;
-                  color: #666;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="page">
-                <div class="image-container">
-                  <img src="${localUri}" alt="${commonName}" />
-                </div>
-                <div class="legend">
-                  <div class="common-name">${commonName}</div>
-                  <div class="scientific-name">${scientificName}</div>
-                </div>
-              </div>
-            </body>
-          </html>
-        `);
-        printDocument.close();
-
-        // Fonction pour lancer l'impression
-        const doPrint = () => {
-          try {
-            printFrame.contentWindow?.print();
-          } catch (e) {
-            console.error('Erreur impression:', e);
-          }
-          // Nettoyer l'iframe après l'impression
-          setTimeout(() => {
-            try {
-              document.body.removeChild(printFrame);
-            } catch (e) {
-              // Ignorer si déjà supprimé
-            }
-          }, 1000);
-          setLoading(false);
-        };
-
-        // Attendre que l'image soit chargée avant d'imprimer
-        const img = printDocument.querySelector('img');
-        if (img) {
-          // Pour les images base64, elles peuvent être déjà chargées
-          if (img.complete && img.naturalHeight !== 0) {
-            // Image déjà chargée
-            setTimeout(doPrint, 100);
-          } else {
-            // Attendre le chargement
-            img.onload = doPrint;
-            img.onerror = () => {
-              Alert.alert('Erreur', 'Impossible de charger l\'image pour l\'impression');
-              document.body.removeChild(printFrame);
-              setLoading(false);
-            };
-            // Timeout de sécurité au cas où onload ne se déclenche pas
-            setTimeout(() => {
-              if (img.complete || img.naturalHeight > 0) {
-                doPrint();
-              }
-            }, 2000);
-          }
-        } else {
-          doPrint();
-        }
-      } else {
-        // Sur mobile, utiliser expo-print
-        const Print = require('expo-print');
-        const FileSystem = require('expo-file-system');
-        
-        if (imageUri.startsWith('http')) {
-          const filename = `${id}.png`;
-          const downloadPath = `${FileSystem.documentDirectory}${filename}`;
-          const downloadResult = await FileSystem.downloadAsync(imageUri as string, downloadPath);
-          localUri = downloadResult.uri;
-        }
-
-        const html = `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <style>
-                @page { size: A4; margin: 0; }
-                body { margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-                .image-container { width: 100%; text-align: center; margin-bottom: 20px; }
-                .image-container img { max-width: 100%; height: auto; page-break-inside: avoid; }
-                .legend { margin-top: 20px; padding: 20px; border-top: 2px solid #2d5016; }
-                .common-name { font-size: 28px; font-weight: bold; color: #2d5016; margin-bottom: 8px; }
-                .scientific-name { font-size: 18px; font-style: italic; color: #666; margin-bottom: 12px; }
-                .description { font-size: 14px; color: #333; line-height: 1.6; }
-              </style>
-            </head>
-            <body>
-              <div class="image-container">
-                <img src="${localUri}" alt="${commonName}" />
-              </div>
-              <div class="legend">
-                <div class="common-name">${commonName}</div>
-                <div class="scientific-name">${scientificName}</div>
-                <div class="description">${description}</div>
-              </div>
-            </body>
-          </html>
-        `;
-
-        await Print.printAsync({
-          html,
-          width: 595,
-          height: 842,
-        });
-        setLoading(false);
-      }
-    } catch (error: any) {
-      Alert.alert('Erreur', 'Impossible d\'imprimer l\'illustration');
-      console.error('Print error:', error);
-      setLoading(false);
-    }
-  };
-
   const handleShare = async () => {
     if (!imageUri) return;
 
@@ -323,27 +124,18 @@ export default function DetailScreen() {
 
       <View style={styles.actions}>
         <TouchableOpacity
-          style={[styles.actionButton, styles.printButton]}
-          onPress={handlePrint}
+          style={[styles.actionButton, styles.shareButton]}
+          onPress={handleShare}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <>
-              <Ionicons name="print" size={20} color="#fff" />
-              <Text style={styles.actionButtonText}>Imprimer</Text>
+              <Ionicons name="share-outline" size={20} color="#fff" />
+              <Text style={styles.actionButtonText}>Partager</Text>
             </>
           )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.shareButton]}
-          onPress={handleShare}
-          disabled={loading}
-        >
-          <Ionicons name="share-outline" size={20} color="#fff" />
-          <Text style={styles.actionButtonText}>Partager</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -442,7 +234,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 24,
     paddingVertical: 20,
-    gap: 12,
     borderTopWidth: 1,
     borderTopColor: '#e8e8e8',
     backgroundColor: '#fff',
@@ -467,11 +258,8 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  printButton: {
-    backgroundColor: '#2d5016',
-  },
   shareButton: {
-    backgroundColor: '#4a7c59',
+    backgroundColor: '#2d5016',
   },
   actionButtonText: {
     color: '#fff',
