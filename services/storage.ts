@@ -266,22 +266,43 @@ export const getCreations = async (): Promise<BotanicalCreation[]> => {
 
 // Supprimer une création
 export const deleteCreation = async (id: string): Promise<void> => {
+  console.log('deleteCreation appelé avec ID:', id, 'type:', typeof id);
+  
   if (isWeb) {
     await ensureMigration();
     const db = await openDB();
     
+    // S'assurer que l'ID est une string
+    const idString = String(id);
+    console.log('Suppression de IndexedDB avec ID (string):', idString);
+    
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(STORE_CREATIONS, 'readwrite');
       const store = transaction.objectStore(STORE_CREATIONS);
-      const request = store.delete(id);
       
-      request.onsuccess = () => {
-        console.log('Création supprimée de IndexedDB:', id);
-        resolve();
+      // Vérifier d'abord si l'élément existe
+      const checkRequest = store.get(idString);
+      checkRequest.onsuccess = () => {
+        if (checkRequest.result) {
+          console.log('Élément trouvé, suppression...', checkRequest.result);
+          const deleteRequest = store.delete(idString);
+          deleteRequest.onsuccess = () => {
+            console.log('Création supprimée de IndexedDB avec succès:', idString);
+            resolve();
+          };
+          deleteRequest.onerror = () => {
+            console.error('Erreur lors de la suppression IndexedDB:', deleteRequest.error);
+            reject(deleteRequest.error);
+          };
+        } else {
+          console.warn('Élément non trouvé dans IndexedDB avec ID:', idString);
+          // Résoudre quand même car l'objectif (supprimer) est atteint
+          resolve();
+        }
       };
-      request.onerror = () => {
-        console.error('Erreur suppression IndexedDB:', request.error);
-        reject(request.error);
+      checkRequest.onerror = () => {
+        console.error('Erreur lors de la vérification IndexedDB:', checkRequest.error);
+        reject(checkRequest.error);
       };
     });
   } else {

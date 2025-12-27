@@ -80,21 +80,42 @@ export default function FavoritesScreen() {
   };
 
   const handleDelete = (creation: BotanicalCreation) => {
-    Alert.alert(
-      'Supprimer',
-      `Voulez-vous supprimer "${creation.commonName}" ?`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteCreation(creation.id);
+    if (Platform.OS === 'web') {
+      // Sur le web, utiliser confirm natif
+      if (typeof window !== 'undefined' && window.confirm(`Voulez-vous supprimer "${creation.commonName}" ?`)) {
+        console.log('Confirmation OK, suppression de:', creation.id);
+        deleteCreation(creation.id)
+          .then(() => {
+            console.log('Suppression réussie, rechargement...');
             loadCreations();
+          })
+          .catch((error) => {
+            console.error('Erreur lors de la suppression:', error);
+            Alert.alert('Erreur', 'Impossible de supprimer la création');
+          });
+      }
+    } else {
+      Alert.alert(
+        'Supprimer',
+        `Voulez-vous supprimer "${creation.commonName}" ?`,
+        [
+          { text: 'Annuler', style: 'cancel' },
+          {
+            text: 'Supprimer',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deleteCreation(creation.id);
+                loadCreations();
+              } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+                Alert.alert('Erreur', 'Impossible de supprimer la création');
+              }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const renderItem = ({ item }: { item: BotanicalCreation }) => {
