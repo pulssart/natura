@@ -32,15 +32,25 @@ export default function DetailScreen() {
       let localUri = imageUri as string;
       
       if (isWeb) {
-        // Sur le web, utiliser window.print()
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-          Alert.alert('Erreur', 'Veuillez autoriser les popups pour imprimer');
+        // Sur le web, utiliser un iframe caché pour imprimer sans quitter la page
+        const printFrame = document.createElement('iframe');
+        printFrame.style.position = 'absolute';
+        printFrame.style.top = '-9999px';
+        printFrame.style.left = '-9999px';
+        printFrame.style.width = '0';
+        printFrame.style.height = '0';
+        printFrame.style.border = 'none';
+        document.body.appendChild(printFrame);
+
+        const printDocument = printFrame.contentDocument || printFrame.contentWindow?.document;
+        if (!printDocument) {
+          Alert.alert('Erreur', 'Impossible de créer le document d\'impression');
+          document.body.removeChild(printFrame);
           setLoading(false);
           return;
         }
 
-        printWindow.document.write(`
+        printDocument.write(`
           <!DOCTYPE html>
           <html>
             <head>
@@ -82,11 +92,31 @@ export default function DetailScreen() {
             </body>
           </html>
         `);
-        printWindow.document.close();
-        printWindow.onload = () => {
-          printWindow.print();
+        printDocument.close();
+
+        // Attendre que l'image soit chargée avant d'imprimer
+        const img = printDocument.querySelector('img');
+        if (img) {
+          img.onload = () => {
+            printFrame.contentWindow?.print();
+            // Nettoyer l'iframe après l'impression
+            setTimeout(() => {
+              document.body.removeChild(printFrame);
+            }, 1000);
+            setLoading(false);
+          };
+          img.onerror = () => {
+            Alert.alert('Erreur', 'Impossible de charger l\'image pour l\'impression');
+            document.body.removeChild(printFrame);
+            setLoading(false);
+          };
+        } else {
+          printFrame.contentWindow?.print();
+          setTimeout(() => {
+            document.body.removeChild(printFrame);
+          }, 1000);
           setLoading(false);
-        };
+        }
       } else {
         // Sur mobile, utiliser expo-print
         const Print = require('expo-print');
