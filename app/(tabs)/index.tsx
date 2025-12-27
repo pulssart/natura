@@ -134,9 +134,13 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Natura</Text>
+          <Image 
+            source={require('../../assets/logo.png')} 
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <TouchableOpacity onPress={() => setShowApiModal(true)}>
-            <Ionicons name="settings-outline" size={24} color="#2d5016" />
+            <Ionicons name="settings-outline" size={24} color="#2E7D32" />
           </TouchableOpacity>
         </View>
 
@@ -246,11 +250,9 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  title: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#2E7D32', // Vert émeraude plus doux
-    letterSpacing: -0.5,
+  logo: {
+    height: 40,
+    width: 180,
   },
   content: {
     padding: 24,
