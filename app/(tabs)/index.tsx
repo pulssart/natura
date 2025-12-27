@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 7,
     paddingVertical: 2,
     backgroundColor: 'rgba(255, 255, 255, 0.95)', // Blanc légèrement transparent
     borderBottomWidth: 1,
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   },
   logo: {
     height: 73,
-    width: 204,
+    width: 173,
     paddingTop: 0,
     paddingBottom: 0,
   },
