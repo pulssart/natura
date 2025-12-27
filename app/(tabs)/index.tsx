@@ -81,45 +81,49 @@ export default function HomeScreen() {
     }
 
     setLoading(true);
+    console.log('Début de la génération...');
 
     try {
       // Étape 1: Analyser avec GPT-5.2
+      console.log('Étape 1: Analyse de l\'input...');
       const analysis = await analyzeInput(selectedImage || undefined, textDescription || undefined);
+      console.log('Analyse terminée:', analysis);
 
       // Étape 2: Générer l'illustration avec GPT Image 1.5
+      console.log('Étape 2: Génération de l\'illustration...');
       const imageUrl = await generateBotanicalIllustration(analysis);
+      console.log('Illustration générée, URL:', imageUrl);
 
       // Étape 3: Sauvegarder la création
-      await saveCreation({
+      console.log('Étape 3: Sauvegarde de la création...');
+      const savedCreation = await saveCreation({
         imageUri: imageUrl,
         commonName: analysis.commonName,
         scientificName: analysis.scientificName,
         description: analysis.description,
         type: analysis.type,
       });
+      console.log('Création sauvegardée:', savedCreation);
 
-      Alert.alert(
-        'Succès',
-        'Illustration botanique générée et sauvegardée avec succès !',
-        [
-          { 
-            text: 'Voir les favoris', 
-            onPress: () => {
-              setTextDescription('');
-              setSelectedImage(null);
-              router.push('/favorites');
-            }
-          },
-          { 
-            text: 'OK', 
-            onPress: () => {
-              setTextDescription('');
-              setSelectedImage(null);
-            }
-          }
-        ]
-      );
+      // Réinitialiser le formulaire
+      setTextDescription('');
+      setSelectedImage(null);
+
+      // Naviguer automatiquement vers les favoris
+      console.log('Navigation vers les favoris...');
+      // Dans Expo Router avec tabs, on peut naviguer directement vers le nom de l'écran
+      // Utiliser le nom de l'écran sans le préfixe (tabs)
+      router.push('/favorites');
+      
+      // Afficher une alerte de succès (non bloquante)
+      setTimeout(() => {
+        Alert.alert(
+          'Succès',
+          'Illustration botanique générée et sauvegardée avec succès !'
+        );
+      }, 500);
     } catch (error: any) {
+      console.error('Erreur lors de la génération:', error);
       Alert.alert('Erreur', error.message || 'Une erreur est survenue lors de la génération');
     } finally {
       setLoading(false);

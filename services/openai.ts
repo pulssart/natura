@@ -123,14 +123,29 @@ export const generateBotanicalIllustration = async (
   }
 
   const data = await response.json();
+  console.log('Réponse API OpenAI (génération image):', JSON.stringify(data, null, 2));
+  
   // GPT Image 1.5 peut retourner la structure différemment
+  let imageUrl: string | undefined;
   if (data.data && data.data[0]) {
-    return data.data[0].url || data.data[0];
+    imageUrl = data.data[0].url || data.data[0];
+  } else if (data.url) {
+    imageUrl = data.url;
   }
-  if (data.url) {
-    return data.url;
+  
+  if (!imageUrl) {
+    console.error('Format de réponse inattendu:', data);
+    throw new Error('Format de réponse inattendu de l\'API');
   }
-  throw new Error('Format de réponse inattendu de l\'API');
+  
+  // Vérifier que c'est bien une URL HTTP valide
+  if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+    console.error('URL invalide retournée par l\'API:', imageUrl);
+    throw new Error('URL d\'image invalide retournée par l\'API');
+  }
+  
+  console.log('URL d\'image générée:', imageUrl);
+  return imageUrl;
 };
 
 // Convertir une image locale en base64

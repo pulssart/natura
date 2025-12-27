@@ -65,12 +65,29 @@ export const saveCreation = async (creation: Omit<BotanicalCreation, 'id' | 'cre
   // La conversion en base64 peut échouer si l'URL nécessite des en-têtes spéciaux
   let imageUri = creation.imageUri;
   
-  // Si c'est déjà en base64, on le garde tel quel
-  if (isWeb && !imageUri.startsWith('data:image/') && imageUri.startsWith('http')) {
-    // Pour les URLs HTTP, on les garde telles quelles
-    // Les URLs OpenAI devraient être accessibles depuis le navigateur
-    console.log('Conservation de l\'URL originale pour le web:', imageUri.substring(0, 50) + '...');
+  // Valider que l'URL est valide
+  if (!imageUri) {
+    throw new Error('imageUri est requis pour sauvegarder une création');
   }
+  
+  // Vérifier que ce n'est pas du HTML
+  if (imageUri.startsWith('data:text/html')) {
+    console.error('Tentative de sauvegarder une URL HTML invalide:', imageUri.substring(0, 100));
+    throw new Error('URL d\'image invalide: ne peut pas être du HTML');
+  }
+  
+  // Vérifier que c'est une URL HTTP/HTTPS valide ou une image base64
+  const isValidUrl = 
+    imageUri.startsWith('http://') || 
+    imageUri.startsWith('https://') ||
+    imageUri.startsWith('data:image/');
+  
+  if (!isValidUrl) {
+    console.error('URL invalide:', imageUri.substring(0, 100));
+    throw new Error('URL d\'image invalide: doit être une URL HTTP/HTTPS ou une image base64');
+  }
+  
+  console.log('Sauvegarde d\'une création avec URL valide:', imageUri.substring(0, 50) + '...');
   
   const fullCreation: BotanicalCreation = {
     ...creation,
@@ -94,6 +111,35 @@ export const saveCreation = async (creation: Omit<BotanicalCreation, 'id' | 'cre
   return fullCreation;
 };
 
+// Nettoyer les créations avec des URLs invalides
+const cleanInvalidCreations = (creations: BotanicalCreation[]): BotanicalCreation[] => {
+  return creations.filter(creation => {
+    if (!creation.imageUri) {
+      console.warn('Suppression d\'une création sans imageUri:', creation.id);
+      return false;
+    }
+    
+    // Supprimer les créations avec des URLs HTML au lieu d'images
+    if (creation.imageUri.startsWith('data:text/html')) {
+      console.warn('Suppression d\'une création avec URL HTML invalide:', creation.id);
+      return false;
+    }
+    
+    // Garder les URLs HTTP/HTTPS valides et les images base64 valides
+    const isValidUrl = 
+      creation.imageUri.startsWith('http://') || 
+      creation.imageUri.startsWith('https://') ||
+      creation.imageUri.startsWith('data:image/');
+    
+    if (!isValidUrl) {
+      console.warn('Suppression d\'une création avec URL invalide:', creation.id, creation.imageUri.substring(0, 50));
+      return false;
+    }
+    
+    return true;
+  });
+};
+
 // Récupérer toutes les créations
 export const getCreations = async (): Promise<BotanicalCreation[]> => {
   try {
@@ -105,12 +151,26 @@ export const getCreations = async (): Promise<BotanicalCreation[]> => {
       }
       const creations = JSON.parse(data);
       console.log('Créations récupérées depuis localStorage:', creations.length);
-      return creations;
+      
+      // Nettoyer les créations invalides
+      const cleanedCreations = cleanInvalidCreations(creations);
+      if (cleanedCreations.length !== creations.length) {
+        console.log(`Nettoyage: ${creations.length - cleanedCreations.length} création(s) invalide(s) supprimée(s)`);
+        // Sauvegarder les créations nettoyées
+        localStorage.setItem(STORAGE_KEY_CREATIONS, JSON.stringify(cleanedCreations));
+      }
+      
+      return cleanedCreations;
     } else {
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
       const data = await AsyncStorage.getItem(STORAGE_KEY_CREATIONS);
       if (!data) return [];
-      return JSON.parse(data);
+      const creations = JSON.parse(data);
+      const cleanedCreations = cleanInvalidCreations(creations);
+      if (cleanedCreations.length !== creations.length) {
+        await AsyncStorage.setItem(STORAGE_KEY_CREATIONS, JSON.stringify(cleanedCreations));
+      }
+      return cleanedCreations;
     }
   } catch (error) {
     console.error('Error getting creations:', error);
@@ -149,5 +209,24 @@ export const saveApiKey = async (apiKey: string): Promise<void> => {
     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
     await AsyncStorage.setItem(STORAGE_KEY_API_KEY, apiKey);
   }
+};
+
+// Nettoyer toutes les créations invalides (utile pour corriger les données corrompues)
+export const cleanAllInvalidCreations = async (): Promise<number> => {
+  const creations = await getCreations();
+  const beforeCount = creations.length;
+  const cleaned = cleanInvalidCreations(creations);
+  const removedCount = beforeCount - cleaned.length;
+  
+  if (removedCount > 0) {
+    if (isWeb) {
+      localStorage.setItem(STORAGE_KEY_CREATIONS, JSON.stringify(cleaned));
+    } else {
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      await AsyncStorage.setItem(STORAGE_KEY_CREATIONS, JSON.stringify(cleaned));
+    }
+  }
+  
+  return removedCount;
 };
 
