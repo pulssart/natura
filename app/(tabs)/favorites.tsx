@@ -5,11 +5,11 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Pressable,
   Image,
   RefreshControl,
   Dimensions,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -114,19 +114,31 @@ export default function FavoritesScreen() {
           </Text>
         </View>
       </TouchableOpacity>
-      <Pressable
-        style={({ pressed }) => [
-          styles.deleteButton,
-          pressed && styles.deleteButtonPressed
-        ]}
-        onPress={() => {
-          console.log('Delete button pressed for:', item.id);
-          handleDelete(item);
-        }}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        <Ionicons name="close-circle" size={24} color="#ff4444" />
-      </Pressable>
+      {Platform.OS === 'web' ? (
+        <View
+          style={styles.deleteButton}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            console.log('Delete button clicked (web) for:', item.id);
+            handleDelete(item);
+          }}
+        >
+          <Ionicons name="close-circle" size={24} color="#ff4444" />
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => {
+            console.log('Delete button pressed (native) for:', item.id);
+            handleDelete(item);
+          }}
+          activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="close-circle" size={24} color="#ff4444" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -219,11 +231,7 @@ const styles = StyleSheet.create({
     padding: 2,
     zIndex: 10,
     elevation: 5,
-    pointerEvents: 'auto',
-  },
-  deleteButtonPressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.95 }],
+    cursor: Platform.OS === 'web' ? 'pointer' : 'default',
   },
   itemImage: {
     width: '100%',
