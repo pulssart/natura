@@ -32,7 +32,13 @@ export const saveCreation = async (creation: Omit<BotanicalCreation, 'id' | 'cre
   // Sur le web, convertir l'image en base64 pour le stockage
   let imageUri = creation.imageUri;
   if (isWeb) {
-    imageUri = await imageUrlToBase64(creation.imageUri);
+    try {
+      imageUri = await imageUrlToBase64(creation.imageUri);
+      console.log('Image convertie en base64, longueur:', imageUri.length);
+    } catch (error) {
+      console.error('Erreur conversion base64, utilisation URL originale:', error);
+      // En cas d'erreur, on garde l'URL originale
+    }
   }
   
   const fullCreation: BotanicalCreation = {
@@ -48,6 +54,7 @@ export const saveCreation = async (creation: Omit<BotanicalCreation, 'id' | 'cre
   
   if (isWeb) {
     localStorage.setItem(STORAGE_KEY_CREATIONS, JSON.stringify(creations));
+    console.log('Création sauvegardée dans localStorage, total:', creations.length);
   } else {
     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
     await AsyncStorage.setItem(STORAGE_KEY_CREATIONS, JSON.stringify(creations));
@@ -61,8 +68,13 @@ export const getCreations = async (): Promise<BotanicalCreation[]> => {
   try {
     if (isWeb) {
       const data = localStorage.getItem(STORAGE_KEY_CREATIONS);
-      if (!data) return [];
-      return JSON.parse(data);
+      if (!data) {
+        console.log('Aucune donnée dans localStorage');
+        return [];
+      }
+      const creations = JSON.parse(data);
+      console.log('Créations récupérées depuis localStorage:', creations.length);
+      return creations;
     } else {
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
       const data = await AsyncStorage.getItem(STORAGE_KEY_CREATIONS);

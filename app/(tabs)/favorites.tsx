@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BotanicalCreation } from '../../types';
 import { getCreations, deleteCreation } from '../../services/storage';
@@ -33,9 +33,12 @@ export default function FavoritesScreen() {
     setCreations(data);
   }, []);
 
-  useEffect(() => {
-    loadCreations();
-  }, [loadCreations]);
+  // Recharger les créations quand l'écran est focus (quand on revient sur l'onglet)
+  useFocusEffect(
+    useCallback(() => {
+      loadCreations();
+    }, [loadCreations])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

@@ -11,6 +11,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { analyzeInput, generateBotanicalIllustration } from '../../services/openai';
@@ -18,6 +19,7 @@ import { saveCreation } from '../../services/storage';
 import ApiKeyModal from '../../components/ApiKeyModal';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const [textDescription, setTextDescription] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -99,10 +101,23 @@ export default function HomeScreen() {
       Alert.alert(
         'Succès',
         'Illustration botanique générée et sauvegardée avec succès !',
-        [{ text: 'OK', onPress: () => {
-          setTextDescription('');
-          setSelectedImage(null);
-        }}]
+        [
+          { 
+            text: 'Voir les favoris', 
+            onPress: () => {
+              setTextDescription('');
+              setSelectedImage(null);
+              router.push('/favorites');
+            }
+          },
+          { 
+            text: 'OK', 
+            onPress: () => {
+              setTextDescription('');
+              setSelectedImage(null);
+            }
+          }
+        ]
       );
     } catch (error: any) {
       Alert.alert('Erreur', error.message || 'Une erreur est survenue lors de la génération');
