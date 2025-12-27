@@ -1,5 +1,5 @@
 import { AnalysisResult } from '../types';
-import { OPENAI_API_BASE, GPT_5_2_MODEL, GPT_IMAGE_1_5_MODEL, A4_WIDTH, A4_HEIGHT } from '../utils/constants';
+import { OPENAI_API_BASE, GPT_5_2_MODEL, GPT_IMAGE_1_5_MODEL } from '../utils/constants';
 import { getApiKey } from './storage';
 
 const isWeb = typeof window !== 'undefined';
@@ -97,29 +97,39 @@ export const generateBotanicalIllustration = async (
   Style: dessin naturaliste au crayon graphite avec touches de couleur au crayon de couleur, fond blanc, format A4 portrait, haute qualité, prêt pour l'impression. 
   Caractéristiques à représenter: ${analysis.characteristics}`;
 
+  // GPT Image 1.5 - paramètres de base
+  const requestBody: any = {
+    model: GPT_IMAGE_1_5_MODEL,
+    prompt,
+    size: '1024x1792', // Format portrait proche du A4
+  };
+
   const response = await fetch(`${OPENAI_API_BASE}/images/generations`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model: GPT_IMAGE_1_5_MODEL,
-      prompt,
-      n: 1,
-      size: `${A4_WIDTH}x${A4_HEIGHT}`,
-      quality: 'hd',
-      response_format: 'url',
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Erreur lors de la génération de l\'image');
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error?.message || `Erreur ${response.status}: ${response.statusText}`;
+    console.error('Erreur API OpenAI:', errorData);
+    console.error('Requête envoyée:', JSON.stringify(requestBody, null, 2));
+    throw new Error(errorMessage);
   }
 
   const data = await response.json();
-  return data.data[0].url;
+  // GPT Image 1.5 peut retourner la structure différemment
+  if (data.data && data.data[0]) {
+    return data.data[0].url || data.data[0];
+  }
+  if (data.url) {
+    return data.url;
+  }
+  throw new Error('Format de réponse inattendu de l\'API');
 };
 
 // Convertir une image locale en base64

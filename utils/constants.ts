@@ -10,6 +10,6 @@ export const STORAGE_DIR = 'Natura';
 
 // API OpenAI
 export const OPENAI_API_BASE = 'https://api.openai.com/v1';
-export const GPT_5_2_MODEL = 'gpt-5.2';
-export const GPT_IMAGE_1_5_MODEL = 'gpt-image-1.5';
+export const GPT_5_2_MODEL = 'gpt-4o'; // Utiliser gpt-4o en attendant gpt-5.2
+export const GPT_IMAGE_1_5_MODEL = 'gpt-image-1.5'; // Modèle pour la génération d'images
 
