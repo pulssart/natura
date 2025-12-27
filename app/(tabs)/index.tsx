@@ -197,9 +197,12 @@ export default function HomeScreen() {
 
           {/* Bouton générer */}
           <TouchableOpacity
-            style={[styles.generateButton, loading && styles.generateButtonDisabled]}
+            style={[
+              styles.generateButton,
+              (loading || (!textDescription.trim() && !selectedImage)) && styles.generateButtonDisabled
+            ]}
             onPress={handleGenerate}
-            disabled={loading}
+            disabled={loading || (!textDescription.trim() && !selectedImage)}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
@@ -365,8 +368,10 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   generateButtonDisabled: {
-    opacity: 0.6,
-    shadowOpacity: 0.1,
+    opacity: 0.5,
+    backgroundColor: '#a5a5a5',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   generateButtonText: {
     color: '#fff',
