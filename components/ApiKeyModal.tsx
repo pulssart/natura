@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   View,
@@ -7,9 +7,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getApiKey, saveApiKey } from '../services/storage';
+import { getApiKey, saveApiKey, exportCreations, importCreations, getCreations } from '../services/storage';
 
 interface ApiKeyModalProps {
   visible: boolean;
@@ -18,6 +21,9 @@ interface ApiKeyModalProps {
 
 export default function ApiKeyModal({ visible, onClose }: ApiKeyModalProps) {
   const [apiKey, setApiKey] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'api' | 'backup'>('api');
+  const fileInputRef = useRef<any>(null);
 
   useEffect(() => {
     if (visible) {
@@ -47,6 +53,106 @@ export default function ApiKeyModal({ visible, onClose }: ApiKeyModalProps) {
     }
   };
 
+  const handleExport = async () => {
+    setLoading(true);
+    try {
+      const creations = await getCreations();
+      if (creations.length === 0) {
+        Alert.alert('Information', 'Aucune création à exporter');
+        setLoading(false);
+        return;
+      }
+
+      await exportCreations();
+      Alert.alert('Succès', `${creations.length} création(s) exportée(s) avec succès`);
+    } catch (error: any) {
+      Alert.alert('Erreur', error.message || 'Impossible d\'exporter les créations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImport = async () => {
+    if (Platform.OS === 'web') {
+      // Sur le web, utiliser un input file
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+      }
+    } else {
+      // Sur mobile, utiliser expo-document-picker
+      Alert.alert('Information', 'L\'import sur mobile nécessite expo-document-picker. Utilisez le partage de fichier.');
+    }
+  };
+
+  const handleFileSelected = async (event: any) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    try {
+      const text = await file.text();
+      
+      const creations = await getCreations();
+      const hasCreations = creations.length > 0;
+      
+      if (hasCreations) {
+        Alert.alert(
+          'Remplacer ou ajouter ?',
+          'Vous avez déjà des créations. Que souhaitez-vous faire ?',
+          [
+            {
+              text: 'Annuler',
+              style: 'cancel',
+              onPress: () => setLoading(false),
+            },
+            {
+              text: 'Remplacer',
+              style: 'destructive',
+              onPress: async () => {
+                try {
+                  const count = await importCreations(text, true);
+                  Alert.alert('Succès', `${count} création(s) importée(s) (remplacement)`);
+                  setLoading(false);
+                  onClose();
+                } catch (error: any) {
+                  Alert.alert('Erreur', error.message || 'Impossible d\'importer les créations');
+                  setLoading(false);
+                }
+              },
+            },
+            {
+              text: 'Ajouter',
+              onPress: async () => {
+                try {
+                  const count = await importCreations(text, false);
+                  Alert.alert('Succès', `${count} création(s) ajoutée(s)`);
+                  setLoading(false);
+                  onClose();
+                } catch (error: any) {
+                  Alert.alert('Erreur', error.message || 'Impossible d\'importer les créations');
+                  setLoading(false);
+                }
+              },
+            },
+          ]
+        );
+      } else {
+        const count = await importCreations(text, false);
+        Alert.alert('Succès', `${count} création(s) importée(s)`);
+        setLoading(false);
+        onClose();
+      }
+    } catch (error: any) {
+      Alert.alert('Erreur', error.message || 'Impossible de lire le fichier');
+      setLoading(false);
+    }
+    
+    // Réinitialiser l'input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <Modal
       visible={visible}
@@ -57,29 +163,106 @@ export default function ApiKeyModal({ visible, onClose }: ApiKeyModalProps) {
       <View style={styles.overlay}>
         <View style={styles.modal}>
           <View style={styles.header}>
-            <Text style={styles.title}>Réglages API</Text>
+            <Text style={styles.title}>Réglages</Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color="#333" />
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.label}>Clé API OpenAI</Text>
-          <TextInput
-            style={styles.input}
-            value={apiKey}
-            onChangeText={setApiKey}
-            placeholder="sk-..."
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <Text style={styles.hint}>
-            Votre clé API est stockée localement et utilisée uniquement pour les requêtes à OpenAI.
-          </Text>
+          {/* Tabs */}
+          <View style={styles.tabs}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'api' && styles.tabActive]}
+              onPress={() => setActiveTab('api')}
+            >
+              <Text style={[styles.tabText, activeTab === 'api' && styles.tabTextActive]}>
+                API
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'backup' && styles.tabActive]}
+              onPress={() => setActiveTab('backup')}
+            >
+              <Text style={[styles.tabText, activeTab === 'backup' && styles.tabTextActive]}>
+                Sauvegarde
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Sauvegarder</Text>
-          </TouchableOpacity>
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            {activeTab === 'api' ? (
+              <>
+                <Text style={styles.label}>Clé API OpenAI</Text>
+                <TextInput
+                  style={styles.input}
+                  value={apiKey}
+                  onChangeText={setApiKey}
+                  placeholder="sk-..."
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <Text style={styles.hint}>
+                  Votre clé API est stockée localement et utilisée uniquement pour les requêtes à OpenAI.
+                </Text>
+
+                <TouchableOpacity
+                  style={[styles.saveButton, loading && styles.buttonDisabled]}
+                  onPress={handleSave}
+                  disabled={loading}
+                >
+                  <Text style={styles.saveButtonText}>Sauvegarder</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.sectionTitle}>Export / Import</Text>
+                <Text style={styles.hint}>
+                  Exportez toutes vos créations dans un fichier JSON incluant les illustrations, ou importez une sauvegarde précédente.
+                </Text>
+
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.exportButton, loading && styles.buttonDisabled]}
+                  onPress={handleExport}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="download-outline" size={20} color="#fff" />
+                      <Text style={styles.actionButtonText}>Exporter les favoris</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.importButton, loading && styles.buttonDisabled]}
+                  onPress={handleImport}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
+                      <Text style={styles.actionButtonText}>Importer une sauvegarde</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                {Platform.OS === 'web' && (
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json,application/json"
+                    style={{ display: 'none' }}
+                    onChange={handleFileSelected}
+                  />
+                )}
+              </>
+            )}
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -111,10 +294,44 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2d5016',
   },
+  tabs: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  tabActive: {
+    backgroundColor: '#2d5016',
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#666',
+  },
+  tabTextActive: {
+    color: '#fff',
+  },
+  content: {
+    flex: 1,
+  },
   label: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2d5016',
     marginBottom: 8,
   },
   input: {
@@ -127,20 +344,50 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   hint: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666',
     marginBottom: 20,
+    lineHeight: 20,
   },
   saveButton: {
     backgroundColor: '#2d5016',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     alignItems: 'center',
+    marginTop: 8,
   },
   saveButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  exportButton: {
+    backgroundColor: '#2d5016',
+  },
+  importButton: {
+    backgroundColor: '#4a7c59',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
 });
 

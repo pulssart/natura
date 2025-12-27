@@ -387,3 +387,177 @@ export const cleanAllInvalidCreations = async (): Promise<number> => {
   
   return removedCount;
 };
+
+// ============================================
+// Export/Import des créations
+// ============================================
+
+// Convertir une image URL en base64
+const imageToBase64 = async (imageUri: string): Promise<string> => {
+  try {
+    if (imageUri.startsWith('data:image/')) {
+      // Déjà en base64, retourner tel quel
+      return imageUri;
+    }
+    
+    if (isWeb) {
+      // Sur le web, utiliser fetch
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } else {
+      // Sur mobile, utiliser expo-file-system
+      const FileSystem = require('expo-file-system');
+      const base64 = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      // Déterminer le type MIME depuis l'extension
+      const mimeType = imageUri.endsWith('.png') ? 'image/png' : 'image/jpeg';
+      return `data:${mimeType};base64,${base64}`;
+    }
+  } catch (error) {
+    console.error('Erreur conversion image en base64:', error);
+    throw new Error('Impossible de convertir l\'image en base64');
+  }
+};
+
+// Exporter toutes les créations dans un fichier JSON
+export const exportCreations = async (): Promise<string> => {
+  try {
+    const creations = await getCreations();
+    
+    if (creations.length === 0) {
+      throw new Error('Aucune création à exporter');
+    }
+    
+    // Convertir toutes les images en base64
+    const creationsWithBase64 = await Promise.all(
+      creations.map(async (creation) => {
+        const base64Image = await imageToBase64(creation.imageUri);
+        return {
+          ...creation,
+          imageUri: base64Image, // Remplacer l'URL par le base64
+        };
+      })
+    );
+    
+    const exportData = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      count: creationsWithBase64.length,
+      creations: creationsWithBase64,
+    };
+    
+    const jsonString = JSON.stringify(exportData, null, 2);
+    
+    if (isWeb) {
+      // Sur le web, télécharger le fichier
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `natura-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      return 'Export réussi';
+    } else {
+      // Sur mobile, utiliser expo-sharing
+      const FileSystem = require('expo-file-system');
+      const Sharing = require('expo-sharing');
+      
+      const filename = `natura-backup-${new Date().toISOString().split('T')[0]}.json`;
+      const fileUri = `${FileSystem.documentDirectory}${filename}`;
+      
+      await FileSystem.writeAsStringAsync(fileUri, jsonString);
+      
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Exporter les créations',
+        });
+      }
+      
+      return 'Export réussi';
+    }
+  } catch (error: any) {
+    console.error('Erreur export:', error);
+    throw new Error(error.message || 'Erreur lors de l\'export');
+  }
+};
+
+// Importer des créations depuis un fichier JSON
+export const importCreations = async (fileContent: string, replace: boolean = false): Promise<number> => {
+  try {
+    const data = JSON.parse(fileContent);
+    
+    // Valider la structure
+    if (!data.creations || !Array.isArray(data.creations)) {
+      throw new Error('Format de fichier invalide');
+    }
+    
+    const importedCreations = data.creations;
+    
+    if (importedCreations.length === 0) {
+      throw new Error('Le fichier ne contient aucune création');
+    }
+    
+    // Si replace est true, supprimer toutes les créations existantes
+    if (replace) {
+      const existingCreations = await getCreations();
+      for (const creation of existingCreations) {
+        await deleteCreation(creation.id);
+      }
+    }
+    
+    // Importer les créations
+    let importedCount = 0;
+    for (const creationData of importedCreations) {
+      try {
+        // Valider que la création a les champs requis
+        if (!creationData.imageUri || !creationData.commonName || !creationData.scientificName) {
+          console.warn('Création invalide ignorée:', creationData);
+          continue;
+        }
+        
+        // Vérifier si l'image est en base64
+        if (!creationData.imageUri.startsWith('data:image/')) {
+          console.warn('Image non base64 ignorée:', creationData.id);
+          continue;
+        }
+        
+        // Créer une nouvelle création (nouvel ID et date)
+        await saveCreation({
+          imageUri: creationData.imageUri,
+          commonName: creationData.commonName,
+          scientificName: creationData.scientificName,
+          description: creationData.description || '',
+          type: creationData.type || 'plant',
+        });
+        
+        importedCount++;
+      } catch (error) {
+        console.error('Erreur import création:', error);
+        // Continuer avec les autres créations
+      }
+    }
+    
+    if (importedCount === 0) {
+      throw new Error('Aucune création valide n\'a pu être importée');
+    }
+    
+    return importedCount;
+  } catch (error: any) {
+    console.error('Erreur import:', error);
+    if (error.message.includes('JSON')) {
+      throw new Error('Fichier JSON invalide');
+    }
+    throw new Error(error.message || 'Erreur lors de l\'import');
+  }
+};
