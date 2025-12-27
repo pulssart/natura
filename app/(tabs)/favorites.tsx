@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Pressable,
   Image,
   RefreshControl,
   Dimensions,
@@ -113,13 +114,19 @@ export default function FavoritesScreen() {
           </Text>
         </View>
       </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDelete(item)}
+      <Pressable
+        style={({ pressed }) => [
+          styles.deleteButton,
+          pressed && styles.deleteButtonPressed
+        ]}
+        onPress={() => {
+          console.log('Delete button pressed for:', item.id);
+          handleDelete(item);
+        }}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Ionicons name="close-circle" size={24} color="#ff4444" />
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 
@@ -191,7 +198,7 @@ const styles = StyleSheet.create({
     height: itemSize * 1.2,
     marginBottom: 12,
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: 'visible',
     backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -210,6 +217,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     padding: 2,
+    zIndex: 10,
+    elevation: 5,
+    pointerEvents: 'auto',
+  },
+  deleteButtonPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.95 }],
   },
   itemImage: {
     width: '100%',
