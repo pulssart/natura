@@ -9,6 +9,7 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -65,7 +66,7 @@ export default function DetailScreen() {
           // Fallback : télécharger l'image
           const link = document.createElement('a');
           link.href = localUri;
-          link.download = `${commonName}.png`;
+          link.download = `${displayCommonName}.png`;
           link.click();
         }
         setLoading(false);
@@ -103,10 +104,23 @@ export default function DetailScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity 
-          onPress={() => {
+          onPress={(e) => {
+            // Empêcher la propagation sur le web
+            if (Platform.OS === 'web' && e) {
+              // @ts-ignore
+              e.nativeEvent?.stopPropagation?.();
+            }
             // Retour vers la page des favoris
             router.push('/favorites');
-          }} 
+          }}
+          {...(Platform.OS === 'web' && {
+            // @ts-ignore - onClick est disponible sur le web
+            onClick: (e: any) => {
+              e?.stopPropagation?.();
+              e?.preventDefault?.();
+              router.push('/favorites');
+            },
+          })}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color="#2d5016" />
@@ -144,7 +158,22 @@ export default function DetailScreen() {
       <View style={styles.actions}>
         <TouchableOpacity
           style={[styles.actionButton, styles.shareButton]}
-          onPress={handleShare}
+          onPress={(e) => {
+            // Empêcher la propagation sur le web
+            if (Platform.OS === 'web' && e) {
+              // @ts-ignore
+              e.nativeEvent?.stopPropagation?.();
+            }
+            handleShare();
+          }}
+          {...(Platform.OS === 'web' && {
+            // @ts-ignore - onClick est disponible sur le web
+            onClick: (e: any) => {
+              e?.stopPropagation?.();
+              e?.preventDefault?.();
+              handleShare();
+            },
+          })}
           disabled={loading}
         >
           {loading ? (
