@@ -102,7 +102,13 @@ export default function DetailScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity 
+          onPress={() => {
+            // Retour vers la page des favoris
+            router.push('/favorites');
+          }} 
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color="#2d5016" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Illustration</Text>
@@ -190,7 +196,8 @@ const styles = StyleSheet.create({
     width: 40,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 150,
+    flexGrow: 1,
   },
   imageContainer: {
     width: '100%',
@@ -249,6 +256,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 8,
+    position: 'relative',
   },
   actionButton: {
     flex: 1,
