@@ -34,6 +34,19 @@ export default function Root({ children }: PropsWithChildren) {
         {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.json" />
         
+        {/* Google Analytics */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-FJJ966M8QD"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-FJJ966M8QD');
+            `,
+          }}
+        />
+        
         <ScrollViewStyleReset />
       </head>
       <body>{children}</body>

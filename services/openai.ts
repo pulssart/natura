@@ -17,15 +17,23 @@ export const analyzeInput = async (
   const messages: any[] = [
     {
       role: 'system',
-      content: `Tu es un expert botaniste. Analyse la photo ou la description fournie et identifie l'espèce (plante, insecte ou animal). 
+      content: `Tu es un expert botaniste et naturaliste. Analyse la photo ou la description fournie et identifie l'espèce (plante, insecte ou animal). 
       Réponds UNIQUEMENT avec un JSON valide contenant:
       - "type": "plant" | "insect" | "animal"
       - "commonName": le nom commun en français (OBLIGATOIRE - ne peut pas être vide)
       - "scientificName": le nom scientifique (format: Genre espèce)
-      - "characteristics": les caractéristiques principales
-      - "description": une courte description (2-3 phrases) pour la légende
+      - "characteristics": les caractéristiques morphologiques principales et distinctives (détaillées)
+      - "description": une description COMPLÈTE et DÉTAILLÉE (minimum 8-10 phrases) incluant:
+        * Description morphologique détaillée (taille, forme, couleurs, textures, etc.)
+        * Habitat et distribution géographique
+        * Comportement, mode de vie ou cycle de vie
+        * Utilisations, importance écologique ou culturelle
+        * Particularités et faits intéressants
+        * Période de floraison/fructification (pour les plantes) ou saison d'activité
       
-      IMPORTANT: Le champ "commonName" est OBLIGATOIRE et doit toujours contenir un nom commun en français. Si tu ne peux pas identifier l'espèce avec certitude, utilise un nom générique approprié (ex: "Plante à fleurs", "Papillon", "Oiseau", etc.) mais ne laisse JAMAIS ce champ vide.`,
+      IMPORTANT: 
+      - Le champ "commonName" est OBLIGATOIRE et doit toujours contenir un nom commun en français. Si tu ne peux pas identifier l'espèce avec certitude, utilise un nom générique approprié (ex: "Plante à fleurs", "Papillon", "Oiseau", etc.) mais ne laisse JAMAIS ce champ vide.
+      - La description doit être TRÈS DÉTAILLÉE, informative et complète, comme dans un guide naturaliste professionnel.`,
     },
   ];
 
@@ -43,14 +51,14 @@ export const analyzeInput = async (
         },
         {
           type: 'text',
-          text: 'Identifie cette espèce et fournis les informations demandées.',
+          text: 'Identifie cette espèce avec précision et fournis une description très détaillée et complète incluant toutes les caractéristiques, l\'habitat, le comportement et les particularités de cette espèce.',
         },
       ],
     });
   } else if (textDescription) {
     messages.push({
       role: 'user',
-      content: `Identifie l'espèce décrite: "${textDescription}" et fournis les informations demandées.`,
+      content: `Identifie l'espèce décrite: "${textDescription}" et fournis une description très détaillée et complète incluant toutes les caractéristiques, l'habitat, le comportement et les particularités de cette espèce.`,
     });
   } else {
     throw new Error('Aucune image ou description fournie');
