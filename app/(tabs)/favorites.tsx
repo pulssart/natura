@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   Pressable,
   Image,
@@ -23,6 +23,12 @@ const isTablet = width >= 768;
 const numColumns = isTablet ? 3 : 2;
 const itemSize = (width - 40 - (numColumns - 1) * 12) / numColumns;
 
+type SectionData = {
+  title: string;
+  data: BotanicalCreation[];
+  type: 'plant' | 'animal' | 'insect';
+};
+
 export default function FavoritesScreen() {
   const [creations, setCreations] = useState<BotanicalCreation[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -34,6 +40,41 @@ export default function FavoritesScreen() {
     data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     setCreations(data);
   }, []);
+
+  // Grouper les créations par type
+  const sections = useMemo(() => {
+    const plants = creations.filter(c => c.type === 'plant');
+    const animals = creations.filter(c => c.type === 'animal');
+    const insects = creations.filter(c => c.type === 'insect');
+
+    const sectionsData: SectionData[] = [];
+
+    if (plants.length > 0) {
+      sectionsData.push({
+        title: 'Végétaux',
+        data: plants,
+        type: 'plant',
+      });
+    }
+
+    if (animals.length > 0) {
+      sectionsData.push({
+        title: 'Animaux',
+        data: animals,
+        type: 'animal',
+      });
+    }
+
+    if (insects.length > 0) {
+      sectionsData.push({
+        title: 'Insectes',
+        data: insects,
+        type: 'insect',
+      });
+    }
+
+    return sectionsData;
+  }, [creations]);
 
   // Recharger les créations quand l'écran est focus (quand on revient sur l'onglet)
   useFocusEffect(
@@ -118,6 +159,44 @@ export default function FavoritesScreen() {
     }
   };
 
+  const renderSectionHeader = (section: SectionData) => (
+    <View style={styles.sectionHeader}>
+      <Ionicons 
+        name={section.type === 'plant' ? 'leaf' : section.type === 'animal' ? 'paw' : 'bug'} 
+        size={20} 
+        color="#2E7D32" 
+      />
+      <Text style={styles.sectionTitle}>{section.title}</Text>
+      <Text style={styles.sectionCount}>({section.data.length})</Text>
+    </View>
+  );
+
+  const renderSectionGrid = (section: SectionData) => {
+    // Créer des lignes pour la grille
+    const rows: BotanicalCreation[][] = [];
+    for (let i = 0; i < section.data.length; i += numColumns) {
+      rows.push(section.data.slice(i, i + numColumns));
+    }
+
+    return (
+      <View style={styles.sectionContent}>
+        {rows.map((row, rowIndex) => (
+          <View key={rowIndex} style={styles.row}>
+            {row.map((item) => (
+              <View key={item.id} style={styles.itemWrapper}>
+                {renderItem({ item })}
+              </View>
+            ))}
+            {/* Remplir les colonnes vides pour l'alignement */}
+            {row.length < numColumns && Array(numColumns - row.length).fill(null).map((_, idx) => (
+              <View key={`empty-${idx}`} style={styles.itemWrapper} />
+            ))}
+          </View>
+        ))}
+      </View>
+    );
+  };
+
   const renderItem = ({ item }: { item: BotanicalCreation }) => {
     const handleDeletePress = () => {
       console.log('Delete button pressed for:', item.id);
@@ -137,11 +216,13 @@ export default function FavoritesScreen() {
           <Image source={{ uri: item.imageUri }} style={styles.itemImage} />
           <View style={styles.itemOverlay}>
             <Text style={styles.itemName} numberOfLines={2}>
-              {item.commonName}
+              {item.commonName || 'Nom non disponible'}
             </Text>
-            <Text style={styles.itemScientific} numberOfLines={1}>
-              {item.scientificName}
-            </Text>
+            {item.scientificName ? (
+              <Text style={styles.itemScientific} numberOfLines={1}>
+                {item.scientificName}
+              </Text>
+            ) : null}
           </View>
         </Pressable>
         <Pressable
@@ -197,17 +278,20 @@ export default function FavoritesScreen() {
         <Text style={styles.count}>{creations.length} illustration{creations.length > 1 ? 's' : ''}</Text>
       </View>
 
-      <FlatList
-        data={creations}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        numColumns={numColumns}
+      <ScrollView
         contentContainerStyle={styles.list}
-        columnWrapperStyle={numColumns > 1 ? styles.row : undefined}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-      />
+        showsVerticalScrollIndicator={false}
+      >
+        {sections.map((section, sectionIndex) => (
+          <View key={sectionIndex}>
+            {renderSectionHeader(section)}
+            {renderSectionGrid(section)}
+          </View>
+        ))}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -244,14 +328,40 @@ const styles = StyleSheet.create({
   list: {
     padding: 16,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+    marginTop: 8,
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#2E7D32',
+    letterSpacing: -0.3,
+  },
+  sectionCount: {
+    fontSize: 16,
+    color: '#558B2F',
+    fontWeight: '500',
+  },
+  sectionContent: {
+    marginBottom: 24,
+  },
   row: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
+    marginBottom: 16,
+  },
+  itemWrapper: {
+    width: itemSize,
   },
   item: {
-    width: itemSize,
+    width: '100%',
     height: itemSize * 1.2,
-    marginBottom: 16,
     borderRadius: 18,
     overflow: 'visible',
     backgroundColor: 'rgba(255, 255, 255, 0.95)',

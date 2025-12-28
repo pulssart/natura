@@ -96,11 +96,15 @@ export default function HomeScreen() {
 
       // Étape 3: Sauvegarder la création
       console.log('Étape 3: Sauvegarde de la création...');
+      // Validation supplémentaire: s'assurer que le nom commun existe
+      if (!analysis.commonName || analysis.commonName.trim() === '') {
+        throw new Error('Le nom commun est obligatoire mais est manquant. Veuillez réessayer.');
+      }
       const savedCreation = await saveCreation({
         imageUri: imageUrl,
-        commonName: analysis.commonName,
-        scientificName: analysis.scientificName,
-        description: analysis.description,
+        commonName: analysis.commonName.trim(),
+        scientificName: analysis.scientificName || '',
+        description: analysis.description || '',
         type: analysis.type,
       });
       console.log('Création sauvegardée:', savedCreation);

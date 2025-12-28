@@ -20,10 +20,12 @@ export const analyzeInput = async (
       content: `Tu es un expert botaniste. Analyse la photo ou la description fournie et identifie l'espèce (plante, insecte ou animal). 
       Réponds UNIQUEMENT avec un JSON valide contenant:
       - "type": "plant" | "insect" | "animal"
-      - "commonName": le nom commun en français
+      - "commonName": le nom commun en français (OBLIGATOIRE - ne peut pas être vide)
       - "scientificName": le nom scientifique (format: Genre espèce)
       - "characteristics": les caractéristiques principales
-      - "description": une courte description (2-3 phrases) pour la légende`,
+      - "description": une courte description (2-3 phrases) pour la légende
+      
+      IMPORTANT: Le champ "commonName" est OBLIGATOIRE et doit toujours contenir un nom commun en français. Si tu ne peux pas identifier l'espèce avec certitude, utilise un nom générique approprié (ex: "Plante à fleurs", "Papillon", "Oiseau", etc.) mais ne laisse JAMAIS ce champ vide.`,
     },
   ];
 
@@ -75,12 +77,17 @@ export const analyzeInput = async (
   const data = await response.json();
   const content = JSON.parse(data.choices[0].message.content);
   
+  // Validation: le nom commun est OBLIGATOIRE
+  if (!content.commonName || content.commonName.trim() === '') {
+    throw new Error('Le nom commun est obligatoire mais n\'a pas été fourni par l\'analyse. Veuillez réessayer.');
+  }
+  
   return {
     type: content.type,
-    commonName: content.commonName,
-    scientificName: content.scientificName,
-    characteristics: content.characteristics,
-    description: content.description,
+    commonName: content.commonName.trim(),
+    scientificName: content.scientificName || '',
+    characteristics: content.characteristics || '',
+    description: content.description || '',
   };
 };
 

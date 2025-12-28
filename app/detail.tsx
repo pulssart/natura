@@ -23,13 +23,19 @@ export default function DetailScreen() {
   const [loading, setLoading] = useState(false);
 
   const { id, imageUri, commonName, scientificName, description } = params;
+  
+  // S'assurer que le nom commun est toujours présent
+  const displayCommonName = (Array.isArray(commonName) ? commonName[0] : commonName) || 'Nom non disponible';
+  const displayScientificName = (Array.isArray(scientificName) ? scientificName[0] : scientificName) || '';
+  const displayDescription = (Array.isArray(description) ? description[0] : description) || '';
+  const imageUriString = Array.isArray(imageUri) ? imageUri[0] : imageUri;
 
   const handleShare = async () => {
-    if (!imageUri) return;
+    if (!imageUriString) return;
 
     setLoading(true);
     try {
-      let localUri = imageUri as string;
+      let localUri = imageUriString as string;
       
       if (isWeb) {
         // Sur le web, utiliser Web Share API
@@ -38,11 +44,11 @@ export default function DetailScreen() {
             // Télécharger l'image pour la partager
             const response = await fetch(localUri);
             const blob = await response.blob();
-            const file = new File([blob], `${commonName}.png`, { type: 'image/png' });
+            const file = new File([blob], `${displayCommonName}.png`, { type: 'image/png' });
             
             await navigator.share({
-              title: commonName as string,
-              text: `${commonName} (${scientificName})`,
+              title: displayCommonName,
+              text: displayScientificName ? `${displayCommonName} (${displayScientificName})` : displayCommonName,
               files: [file],
             });
           } catch (shareError: any) {
@@ -51,7 +57,7 @@ export default function DetailScreen() {
               // Sinon, fallback sur le téléchargement
               const link = document.createElement('a');
               link.href = localUri;
-              link.download = `${commonName}.png`;
+              link.download = `${displayCommonName}.png`;
               link.click();
             }
           }
@@ -68,10 +74,10 @@ export default function DetailScreen() {
         const Sharing = require('expo-sharing');
         const FileSystem = require('expo-file-system');
         
-        if (imageUri.startsWith('http')) {
+        if (imageUriString && typeof imageUriString === 'string' && imageUriString.startsWith('http')) {
           const filename = `${id}.png`;
           const downloadPath = `${FileSystem.documentDirectory}${filename}`;
-          const downloadResult = await FileSystem.downloadAsync(imageUri as string, downloadPath);
+          const downloadResult = await FileSystem.downloadAsync(imageUriString, downloadPath);
           localUri = downloadResult.uri;
         }
 
@@ -79,7 +85,7 @@ export default function DetailScreen() {
         if (isAvailable) {
           await Sharing.shareAsync(localUri, {
             mimeType: 'image/png',
-            dialogTitle: `Partager ${commonName}`,
+            dialogTitle: `Partager ${displayCommonName}`,
           });
         } else {
           Alert.alert('Erreur', 'Le partage n\'est pas disponible sur cet appareil');
@@ -111,7 +117,7 @@ export default function DetailScreen() {
         <View style={styles.imageContainer}>
           <Image
             source={{ 
-              uri: imageUri as string,
+              uri: imageUriString as string,
             }}
             style={styles.image}
             resizeMode="contain"
@@ -119,9 +125,13 @@ export default function DetailScreen() {
         </View>
 
         <View style={styles.legend}>
-          <Text style={styles.commonName}>{commonName}</Text>
-          <Text style={styles.scientificName}>{scientificName}</Text>
-          <Text style={styles.description}>{description}</Text>
+          <Text style={styles.commonName}>{displayCommonName}</Text>
+          {displayScientificName ? (
+            <Text style={styles.scientificName}>{displayScientificName}</Text>
+          ) : null}
+          {displayDescription ? (
+            <Text style={styles.description}>{displayDescription}</Text>
+          ) : null}
         </View>
       </ScrollView>
 
