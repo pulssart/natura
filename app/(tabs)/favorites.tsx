@@ -47,10 +47,10 @@ export default function FavoritesScreen() {
     const animals = creations.filter(c => c.type === 'animal');
     const insects = creations.filter(c => c.type === 'insect');
 
-    const sectionsData: SectionData[] = [];
+    const sortedSections: SectionData[] = [];
 
     if (plants.length > 0) {
-      sectionsData.push({
+      sortedSections.push({
         title: 'Végétaux',
         data: plants,
         type: 'plant',
@@ -58,7 +58,7 @@ export default function FavoritesScreen() {
     }
 
     if (animals.length > 0) {
-      sectionsData.push({
+      sortedSections.push({
         title: 'Animaux',
         data: animals,
         type: 'animal',
@@ -66,15 +66,24 @@ export default function FavoritesScreen() {
     }
 
     if (insects.length > 0) {
-      sectionsData.push({
+      sortedSections.push({
         title: 'Insectes',
         data: insects,
         type: 'insect',
       });
     }
 
-    return sectionsData;
+    return sortedSections;
   }, [creations]);
+
+  const stats = useMemo(
+    () => [
+      { label: 'Végétaux', value: creations.filter(c => c.type === 'plant').length, icon: 'leaf-outline' as const },
+      { label: 'Animaux', value: creations.filter(c => c.type === 'animal').length, icon: 'paw-outline' as const },
+      { label: 'Insectes', value: creations.filter(c => c.type === 'insect').length, icon: 'bug-outline' as const },
+    ],
+    [creations]
+  );
 
   // Recharger les créations quand l'écran est focus (quand on revient sur l'onglet)
   useFocusEffect(
@@ -266,6 +275,10 @@ export default function FavoritesScreen() {
           <Text style={styles.emptySubtext}>
             Générez votre première illustration depuis l'écran d'accueil
           </Text>
+          <TouchableOpacity style={styles.ctaButton} onPress={() => router.push('/')}> 
+            <Ionicons name="sparkles-outline" size={18} color="#fff" />
+            <Text style={styles.ctaButtonText}>Créer une illustration</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -276,6 +289,24 @@ export default function FavoritesScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Mes Créations</Text>
         <Text style={styles.count}>{creations.length} illustration{creations.length > 1 ? 's' : ''}</Text>
+        <View style={styles.badge}>
+          <Ionicons name="time-outline" size={16} color="#1f3b16" />
+          <Text style={styles.badgeText}>Triées par date</Text>
+        </View>
+      </View>
+
+      <View style={styles.summaryBar}>
+        {stats.map((stat) => (
+          <View key={stat.label} style={styles.summaryItem}>
+            <View style={styles.summaryIcon}>
+              <Ionicons name={stat.icon} size={16} color="#1f3b16" />
+            </View>
+            <View>
+              <Text style={styles.summaryLabel}>{stat.label}</Text>
+              <Text style={styles.summaryValue}>{stat.value}</Text>
+            </View>
+          </View>
+        ))}
       </View>
 
       <ScrollView
@@ -324,6 +355,65 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#558B2F',
     fontWeight: '500',
+  },
+  badge: {
+    marginTop: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: '#E5F3D8',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(46, 125, 50, 0.15)',
+  },
+  badgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1f3b16',
+  },
+  summaryBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  summaryItem: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 14,
+    padding: 12,
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(46, 125, 50, 0.08)',
+  },
+  summaryIcon: {
+    height: 36,
+    width: 36,
+    borderRadius: 10,
+    backgroundColor: '#E5F3D8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  summaryLabel: {
+    fontSize: 13,
+    color: '#3C5B2F',
+    fontWeight: '600',
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1B5E20',
   },
   list: {
     padding: 16,
@@ -443,6 +533,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 40,
+  },
+  ctaButton: {
+    marginTop: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 14,
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  ctaButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
 
