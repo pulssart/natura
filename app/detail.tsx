@@ -102,8 +102,9 @@ export default function DetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <View pointerEvents="none" style={styles.backgroundAccent} />
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={(e) => {
             // Empêcher la propagation sur le web
             if (Platform.OS === 'web' && e) {
@@ -129,6 +130,11 @@ export default function DetailScreen() {
         <View style={styles.placeholder} />
       </View>
 
+      <View style={styles.banner}>
+        <Ionicons name="sparkles-outline" size={18} color="#1f3b16" />
+        <Text style={styles.bannerText}>Découvre les détails de ton illustration générée</Text>
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -136,15 +142,24 @@ export default function DetailScreen() {
       >
         <View style={styles.imageContainer}>
           <Image
-            source={{ 
+            source={{
               uri: imageUriString as string,
             }}
             style={styles.image}
             resizeMode="contain"
           />
+          <View style={styles.imageBadge}>
+            <Ionicons name="leaf-outline" size={16} color="#1f3b16" />
+            <Text style={styles.imageBadgeText}>Prêt à partager</Text>
+          </View>
         </View>
 
         <View style={styles.legend}>
+          <View style={styles.legendHeader}>
+            <Text style={styles.legendKicker}>Fiche botanique</Text>
+            <View style={styles.legendDivider} />
+            <Ionicons name="ribbon-outline" size={18} color="#2E7D32" />
+          </View>
           <Text style={styles.commonName}>{displayCommonName}</Text>
           {displayScientificName ? (
             <Text style={styles.scientificName}>{displayScientificName}</Text>
@@ -195,6 +210,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F1F8E9', // Jaune-vert pâle lumineux
   },
+  backgroundAccent: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#DDEFD5',
+    transform: [{ skewY: '-5deg' }],
+    top: -220,
+    borderBottomLeftRadius: 160,
+    borderBottomRightRadius: 160,
+    opacity: 0.65,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -224,6 +248,30 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 40,
   },
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    marginHorizontal: 20,
+    marginTop: 14,
+    borderRadius: 16,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.1)',
+  },
+  bannerText: {
+    fontSize: 14,
+    color: '#2E7D32',
+    fontWeight: '600',
+    flex: 1,
+  },
   scrollContent: {
     paddingBottom: 150,
     flexGrow: 1,
@@ -235,10 +283,42 @@ const styles = StyleSheet.create({
     marginBottom: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    overflow: 'hidden',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   image: {
     width: '100%',
     height: '100%',
+  },
+  imageBadge: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 999,
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(46, 125, 50, 0.15)',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  imageBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1f3b16',
   },
   legend: {
     padding: 24,
@@ -252,6 +332,24 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
     marginHorizontal: 24,
+  },
+  legendHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  legendKicker: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#2E7D32',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  legendDivider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(46, 125, 50, 0.2)',
   },
   commonName: {
     fontSize: 32,

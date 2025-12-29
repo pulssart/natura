@@ -136,21 +136,71 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <View pointerEvents="none" style={styles.backgroundAccent} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Image 
-              source={require('../../assets/logo.png')} 
+            <Image
+              source={require('../../assets/logo.png')}
               style={styles.logo}
               resizeMode="contain"
             />
           </View>
-          <TouchableOpacity onPress={() => setShowApiModal(true)}>
-            <Ionicons name="settings-outline" size={24} color="#2E7D32" />
+          <TouchableOpacity onPress={() => setShowApiModal(true)} style={styles.iconButton}>
+            <Ionicons name="settings-outline" size={22} color="#1f3b16" />
           </TouchableOpacity>
         </View>
 
+        <View style={styles.heroCard}>
+          <View style={styles.heroTextGroup}>
+            <Text style={styles.kicker}>Assistant botanique</Text>
+            <Text style={styles.heroTitle}>Composez des planches élégantes</Text>
+            <Text style={styles.heroDescription}>
+              Combinez l'analyse IA et vos photos pour générer des illustrations soignées, prêtes à partager.
+            </Text>
+            <View style={styles.heroPills}>
+              <View style={styles.pill}>
+                <Ionicons name="leaf-outline" size={16} color="#1f3b16" />
+                <Text style={styles.pillText}>Botanique</Text>
+              </View>
+              <View style={styles.pill}>
+                <Ionicons name="color-palette-outline" size={16} color="#1f3b16" />
+                <Text style={styles.pillText}>Illustration</Text>
+              </View>
+              <View style={styles.pill}>
+                <Ionicons name="sparkles-outline" size={16} color="#1f3b16" />
+                <Text style={styles.pillText}>IA</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.heroBadge}>
+            <Ionicons name="time-outline" size={18} color="#1f3b16" />
+            <Text style={styles.heroBadgeText}>En quelques étapes</Text>
+          </View>
+        </View>
+
         <View style={styles.content}>
+          <View style={styles.stepsCard}>
+            <Text style={styles.stepsTitle}>Démarrez en douceur</Text>
+            <View style={styles.stepsRow}>
+              <View style={styles.stepItem}>
+                <Ionicons name="text-outline" size={18} color="#2E7D32" />
+                <Text style={styles.stepLabel}>Décrivez un sujet</Text>
+              </View>
+              <View style={styles.stepDivider} />
+              <View style={styles.stepItem}>
+                <Ionicons name="image-outline" size={18} color="#2E7D32" />
+                <Text style={styles.stepLabel}>Ajoutez une photo</Text>
+              </View>
+              <View style={styles.stepDivider} />
+              <View style={styles.stepItem}>
+                <Ionicons name="sparkles-outline" size={18} color="#2E7D32" />
+                <Text style={styles.stepLabel}>Lancez la magie</Text>
+              </View>
+            </View>
+          </View>
+
           <Text style={styles.subtitle}>Créez une illustration botanique</Text>
           <Text style={styles.description}>
             Entrez une description ou prenez une photo pour générer une illustration scientifique
@@ -174,7 +224,7 @@ export default function HomeScreen() {
               onPress={pickImage}
               disabled={loading}
             >
-              <Ionicons name="images-outline" size={24} color={selectedImage ? "#fff" : "#2d5016"} />
+              <Ionicons name="images-outline" size={22} color={selectedImage ? "#fff" : "#1f3b16"} />
               <Text style={[styles.photoButtonText, selectedImage && styles.photoButtonTextActive]}>
                 Galerie
               </Text>
@@ -185,7 +235,7 @@ export default function HomeScreen() {
               onPress={takePhoto}
               disabled={loading}
             >
-              <Ionicons name="camera-outline" size={24} color={selectedImage ? "#fff" : "#2d5016"} />
+              <Ionicons name="camera-outline" size={22} color={selectedImage ? "#fff" : "#1f3b16"} />
               <Text style={[styles.photoButtonText, selectedImage && styles.photoButtonTextActive]}>
                 Photo
               </Text>
@@ -204,6 +254,16 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
           )}
+
+          <View style={styles.helperCard}>
+            <Ionicons name="bulb-outline" size={18} color="#1f3b16" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.helperTitle}>Astuces</Text>
+              <Text style={styles.helperText}>
+                Combinez une description précise (couleurs, texture, contexte) et une photo nette pour un rendu optimal.
+              </Text>
+            </View>
+          </View>
 
           {/* Bouton générer */}
           <TouchableOpacity
@@ -241,6 +301,15 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 20,
   },
+  backgroundAccent: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#DDEFD5',
+    transform: [{ skewY: '-6deg' }],
+    top: -180,
+    borderBottomLeftRadius: 120,
+    borderBottomRightRadius: 120,
+    opacity: 0.6,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -272,8 +341,127 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     textAlign: 'left',
   },
+  iconButton: {
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+  },
+  heroCard: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    padding: 22,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    elevation: 6,
+  },
+  heroTextGroup: {
+    gap: 10,
+  },
+  kicker: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#2E7D32',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  heroTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#1B5E20',
+    letterSpacing: -0.3,
+  },
+  heroDescription: {
+    fontSize: 15,
+    color: '#3C5B2F',
+    lineHeight: 22,
+  },
+  heroPills: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 6,
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(237, 247, 227, 0.9)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  pillText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1f3b16',
+  },
+  heroBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#D8F1C5',
+    borderRadius: 999,
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(46, 125, 50, 0.15)',
+  },
+  heroBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1f3b16',
+  },
   content: {
     padding: 24,
+  },
+  stepsCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 20,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  stepsTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#2E7D32',
+    marginBottom: 8,
+  },
+  stepsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  stepItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+  },
+  stepLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1f3b16',
+    textAlign: 'center',
+  },
+  stepDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: 'rgba(46, 125, 50, 0.2)',
+    marginHorizontal: 8,
   },
   subtitle: {
     fontSize: 26,
@@ -353,6 +541,33 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 5,
+  },
+  helperCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: 'rgba(216, 241, 197, 0.9)',
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(46, 125, 50, 0.12)',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+    marginBottom: 12,
+  },
+  helperTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1f3b16',
+    marginBottom: 4,
+  },
+  helperText: {
+    fontSize: 13,
+    color: '#2E7D32',
+    lineHeight: 20,
   },
   previewImage: {
     width: '100%',
