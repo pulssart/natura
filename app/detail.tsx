@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-const isWeb = typeof window !== 'undefined';
+const isWeb = Platform.OS === 'web';
 
 const { width, height } = Dimensions.get('window');
 
@@ -31,21 +31,98 @@ export default function DetailScreen() {
   const displayDescription = (Array.isArray(description) ? description[0] : description) || '';
   const imageUriString = Array.isArray(imageUri) ? imageUri[0] : imageUri;
 
+  // Fonction de retour améliorée
+  const handleBack = () => {
+    if (isWeb && typeof window !== 'undefined') {
+      // Sur le web, vérifier s'il y a un historique
+      if (window.history.length > 1) {
+        router.back();
+      } else {
+        // Sinon, aller à la page d'accueil
+        router.replace('/');
+      }
+    } else {
+      router.back();
+    }
+  };
+
+  // Fonction de téléchargement pour le web
+  const downloadImage = async (uri: string, filename: string) => {
+    try {
+      // Créer un canvas pour convertir l'image
+      const img = new (window as any).Image();
+      img.crossOrigin = 'anonymous';
+      
+      return new Promise<void>((resolve, reject) => {
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            canvas.toBlob((blob) => {
+              if (blob) {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                resolve();
+              } else {
+                reject(new Error('Impossible de créer le blob'));
+              }
+            }, 'image/png');
+          } else {
+            reject(new Error('Impossible de créer le contexte canvas'));
+          }
+        };
+        img.onerror = () => {
+          // Fallback: téléchargement direct
+          const link = document.createElement('a');
+          link.href = uri;
+          link.download = filename;
+          link.target = '_blank';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          resolve();
+        };
+        img.src = uri;
+      });
+    } catch (error) {
+      // Fallback ultime
+      const link = document.createElement('a');
+      link.href = uri;
+      link.download = filename;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   const handleShare = async () => {
     if (!imageUriString) return;
 
     setLoading(true);
     try {
       let localUri = imageUriString as string;
+      const filename = `${displayCommonName.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
       
-      if (isWeb) {
-        // Sur le web, utiliser Web Share API
-        if (navigator.share) {
+      if (isWeb && typeof window !== 'undefined') {
+        // Sur le web, essayer Web Share API d'abord, sinon télécharger
+        const canShareFiles = navigator.canShare && navigator.canShare({ files: [new File([], 'test.png', { type: 'image/png' })] });
+        
+        if (navigator.share && canShareFiles) {
           try {
             // Télécharger l'image pour la partager
             const response = await fetch(localUri);
             const blob = await response.blob();
-            const file = new File([blob], `${displayCommonName}.png`, { type: 'image/png' });
+            const file = new File([blob], filename, { type: 'image/png' });
             
             await navigator.share({
               title: displayCommonName,
@@ -56,18 +133,12 @@ export default function DetailScreen() {
             if (shareError.name !== 'AbortError') {
               // Si l'utilisateur annule, ne pas afficher d'erreur
               // Sinon, fallback sur le téléchargement
-              const link = document.createElement('a');
-              link.href = localUri;
-              link.download = `${displayCommonName}.png`;
-              link.click();
+              await downloadImage(localUri, filename);
             }
           }
         } else {
           // Fallback : télécharger l'image
-          const link = document.createElement('a');
-          link.href = localUri;
-          link.download = `${displayCommonName}.png`;
-          link.click();
+          await downloadImage(localUri, filename);
         }
         setLoading(false);
       } else {
@@ -76,8 +147,8 @@ export default function DetailScreen() {
         const FileSystem = require('expo-file-system');
         
         if (imageUriString && typeof imageUriString === 'string' && imageUriString.startsWith('http')) {
-          const filename = `${id}.png`;
-          const downloadPath = `${FileSystem.documentDirectory}${filename}`;
+          const downloadFilename = `${id}.png`;
+          const downloadPath = `${FileSystem.documentDirectory}${downloadFilename}`;
           const downloadResult = await FileSystem.downloadAsync(imageUriString, downloadPath);
           localUri = downloadResult.uri;
         }
@@ -94,8 +165,12 @@ export default function DetailScreen() {
         setLoading(false);
       }
     } catch (error: any) {
-      Alert.alert('Erreur', 'Impossible de partager l\'illustration');
       console.error('Share error:', error);
+      if (isWeb) {
+        alert('Impossible de partager l\'illustration');
+      } else {
+        Alert.alert('Erreur', 'Impossible de partager l\'illustration');
+      }
       setLoading(false);
     }
   };
@@ -105,21 +180,13 @@ export default function DetailScreen() {
       <View pointerEvents="none" style={styles.backgroundAccent} />
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={(e) => {
-            // Empêcher la propagation sur le web
-            if (Platform.OS === 'web' && e) {
-              // @ts-ignore
-              e.nativeEvent?.stopPropagation?.();
-            }
-            // Retour vers la page des favoris
-            router.push('/favorites');
-          }}
+          onPress={handleBack}
           {...(Platform.OS === 'web' && {
             // @ts-ignore - onClick est disponible sur le web
             onClick: (e: any) => {
               e?.stopPropagation?.();
               e?.preventDefault?.();
-              router.push('/favorites');
+              handleBack();
             },
           })}
           style={styles.backButton}
@@ -173,22 +240,7 @@ export default function DetailScreen() {
       <View style={styles.actions}>
         <TouchableOpacity
           style={[styles.actionButton, styles.shareButton]}
-          onPress={(e) => {
-            // Empêcher la propagation sur le web
-            if (Platform.OS === 'web' && e) {
-              // @ts-ignore
-              e.nativeEvent?.stopPropagation?.();
-            }
-            handleShare();
-          }}
-          {...(Platform.OS === 'web' && {
-            // @ts-ignore - onClick est disponible sur le web
-            onClick: (e: any) => {
-              e?.stopPropagation?.();
-              e?.preventDefault?.();
-              handleShare();
-            },
-          })}
+          onPress={handleShare}
           disabled={loading}
         >
           {loading ? (
@@ -273,8 +325,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 150,
-    flexGrow: 1,
+    paddingBottom: 100,
   },
   imageContainer: {
     width: '100%',
@@ -383,7 +434,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 8,
-    position: 'relative',
   },
   actionButton: {
     flex: 1,
