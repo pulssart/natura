@@ -30,7 +30,7 @@ export default function HomeScreen() {
     if (status !== 'granted') {
       Alert.alert(
         'Permission requise',
-        'L\'application a besoin d\'accéder à vos photos pour fonctionner.'
+        "L'application a besoin d'accéder à vos photos pour fonctionner."
       );
       return false;
     }
@@ -49,7 +49,7 @@ export default function HomeScreen() {
 
     if (!result.canceled && result.assets[0]) {
       setSelectedImage(result.assets[0].uri);
-      setTextDescription(''); // Effacer le texte si une image est sélectionnée
+      setTextDescription('');
     }
   };
 
@@ -58,7 +58,7 @@ export default function HomeScreen() {
     if (status !== 'granted') {
       Alert.alert(
         'Permission requise',
-        'L\'application a besoin d\'accéder à la caméra pour fonctionner.'
+        "L'application a besoin d'accéder à la caméra pour fonctionner."
       );
       return;
     }
@@ -70,7 +70,7 @@ export default function HomeScreen() {
 
     if (!result.canceled && result.assets[0]) {
       setSelectedImage(result.assets[0].uri);
-      setTextDescription(''); // Effacer le texte si une photo est prise
+      setTextDescription('');
     }
   };
 
@@ -81,45 +81,27 @@ export default function HomeScreen() {
     }
 
     setLoading(true);
-    console.log('Début de la génération...');
 
     try {
-      // Étape 1: Analyser avec GPT-5.2
-      console.log('Étape 1: Analyse de l\'input...');
       const analysis = await analyzeInput(selectedImage || undefined, textDescription || undefined);
-      console.log('Analyse terminée:', analysis);
-
-      // Étape 2: Générer l'illustration avec GPT Image 1.5
-      console.log('Étape 2: Génération de l\'illustration...');
       const imageUrl = await generateBotanicalIllustration(analysis);
-      console.log('Illustration générée, URL:', imageUrl);
 
-      // Étape 3: Sauvegarder la création
-      console.log('Étape 3: Sauvegarde de la création...');
-      // Validation supplémentaire: s'assurer que le nom commun existe
       if (!analysis.commonName || analysis.commonName.trim() === '') {
         throw new Error('Le nom commun est obligatoire mais est manquant. Veuillez réessayer.');
       }
-      const savedCreation = await saveCreation({
+
+      await saveCreation({
         imageUri: imageUrl,
         commonName: analysis.commonName.trim(),
         scientificName: analysis.scientificName || '',
         description: analysis.description || '',
         type: analysis.type,
       });
-      console.log('Création sauvegardée:', savedCreation);
 
-      // Réinitialiser le formulaire
       setTextDescription('');
       setSelectedImage(null);
-
-      // Naviguer automatiquement vers les favoris
-      console.log('Navigation vers les favoris...');
-      // Dans Expo Router avec tabs, on peut naviguer directement vers le nom de l'écran
-      // Utiliser le nom de l'écran sans le préfixe (tabs)
       router.push('/favorites');
-      
-      // Afficher une alerte de succès (non bloquante)
+
       setTimeout(() => {
         Alert.alert(
           'Succès',
@@ -127,7 +109,6 @@ export default function HomeScreen() {
         );
       }, 500);
     } catch (error: any) {
-      console.error('Erreur lors de la génération:', error);
       Alert.alert('Erreur', error.message || 'Une erreur est survenue lors de la génération');
     } finally {
       setLoading(false);
@@ -151,65 +132,15 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.heroCard}>
-          <View style={styles.heroTextGroup}>
-            <Text style={styles.kicker}>Assistant botanique</Text>
-            <Text style={styles.heroTitle}>Composez des planches élégantes</Text>
-            <Text style={styles.heroDescription}>
-              Combinez l'analyse IA et vos photos pour générer des illustrations soignées, prêtes à partager.
-            </Text>
-            <View style={styles.heroPills}>
-              <View style={styles.pill}>
-                <Ionicons name="leaf-outline" size={16} color="#1f3b16" />
-                <Text style={styles.pillText}>Botanique</Text>
-              </View>
-              <View style={styles.pill}>
-                <Ionicons name="color-palette-outline" size={16} color="#1f3b16" />
-                <Text style={styles.pillText}>Illustration</Text>
-              </View>
-              <View style={styles.pill}>
-                <Ionicons name="sparkles-outline" size={16} color="#1f3b16" />
-                <Text style={styles.pillText}>IA</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.heroBadge}>
-            <Ionicons name="time-outline" size={18} color="#1f3b16" />
-            <Text style={styles.heroBadgeText}>En quelques étapes</Text>
-          </View>
-        </View>
-
         <View style={styles.content}>
-          <View style={styles.stepsCard}>
-            <Text style={styles.stepsTitle}>Démarrez en douceur</Text>
-            <View style={styles.stepsRow}>
-              <View style={styles.stepItem}>
-                <Ionicons name="text-outline" size={18} color="#2E7D32" />
-                <Text style={styles.stepLabel}>Décrivez un sujet</Text>
-              </View>
-              <View style={styles.stepDivider} />
-              <View style={styles.stepItem}>
-                <Ionicons name="image-outline" size={18} color="#2E7D32" />
-                <Text style={styles.stepLabel}>Ajoutez une photo</Text>
-              </View>
-              <View style={styles.stepDivider} />
-              <View style={styles.stepItem}>
-                <Ionicons name="sparkles-outline" size={18} color="#2E7D32" />
-                <Text style={styles.stepLabel}>Lancez la magie</Text>
-              </View>
-            </View>
-          </View>
-
           <Text style={styles.subtitle}>Créez une illustration botanique</Text>
           <Text style={styles.description}>
-            Entrez une description ou prenez une photo pour générer une illustration scientifique
+            Décrivez votre sujet ou ajoutez une photo, puis lancez la génération.
           </Text>
 
-          {/* Champ de saisie texte */}
           <TextInput
             style={styles.textInput}
-            placeholder="Ex: Une fleur rouge avec des pétales pointus..."
+            placeholder="Ex: Une fougère aux frondes lumineuses dans la rosée du matin..."
             value={textDescription}
             onChangeText={setTextDescription}
             multiline
@@ -217,14 +148,13 @@ export default function HomeScreen() {
             editable={!loading && !selectedImage}
           />
 
-          {/* Boutons photo */}
           <View style={styles.photoButtons}>
             <TouchableOpacity
               style={[styles.photoButton, selectedImage && styles.photoButtonActive]}
               onPress={pickImage}
               disabled={loading}
             >
-              <Ionicons name="images-outline" size={22} color={selectedImage ? "#fff" : "#1f3b16"} />
+              <Ionicons name="images-outline" size={22} color={selectedImage ? '#fff' : '#1f3b16'} />
               <Text style={[styles.photoButtonText, selectedImage && styles.photoButtonTextActive]}>
                 Galerie
               </Text>
@@ -235,14 +165,13 @@ export default function HomeScreen() {
               onPress={takePhoto}
               disabled={loading}
             >
-              <Ionicons name="camera-outline" size={22} color={selectedImage ? "#fff" : "#1f3b16"} />
+              <Ionicons name="camera-outline" size={22} color={selectedImage ? '#fff' : '#1f3b16'} />
               <Text style={[styles.photoButtonText, selectedImage && styles.photoButtonTextActive]}>
                 Photo
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Aperçu de l'image sélectionnée */}
           {selectedImage && (
             <View style={styles.imagePreview}>
               <Image source={{ uri: selectedImage }} style={styles.previewImage} />
@@ -255,21 +184,10 @@ export default function HomeScreen() {
             </View>
           )}
 
-          <View style={styles.helperCard}>
-            <Ionicons name="bulb-outline" size={18} color="#1f3b16" />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.helperTitle}>Astuces</Text>
-              <Text style={styles.helperText}>
-                Combinez une description précise (couleurs, texture, contexte) et une photo nette pour un rendu optimal.
-              </Text>
-            </View>
-          </View>
-
-          {/* Bouton générer */}
           <TouchableOpacity
             style={[
               styles.generateButton,
-              (loading || (!textDescription.trim() && !selectedImage)) && styles.generateButtonDisabled
+              (loading || (!textDescription.trim() && !selectedImage)) && styles.generateButtonDisabled,
             ]}
             onPress={handleGenerate}
             disabled={loading || (!textDescription.trim() && !selectedImage)}
@@ -294,8 +212,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // Dégradé doux jaune-vert vers aqua-vert (comme l'icône)
-    backgroundColor: '#F1F8E9', // Jaune-vert pâle lumineux
+    backgroundColor: '#F1F8E9',
   },
   scrollContent: {
     flexGrow: 1,
@@ -318,12 +235,12 @@ const styles = StyleSheet.create({
     paddingRight: 31,
     paddingVertical: 2,
     height: 100,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)', // Blanc légèrement transparent
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(76, 175, 80, 0.2)', // Vert doux
+    borderBottomColor: 'rgba(76, 175, 80, 0.2)',
     shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 2,
   },
@@ -350,139 +267,29 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
   },
-  heroCard: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    padding: 22,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    shadowColor: '#4CAF50',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    elevation: 6,
-  },
-  heroTextGroup: {
-    gap: 10,
-  },
-  kicker: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#2E7D32',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-  },
-  heroTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#1B5E20',
-    letterSpacing: -0.3,
-  },
-  heroDescription: {
-    fontSize: 15,
-    color: '#3C5B2F',
-    lineHeight: 22,
-  },
-  heroPills: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 6,
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(237, 247, 227, 0.9)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  pillText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1f3b16',
-  },
-  heroBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#D8F1C5',
-    borderRadius: 999,
-    flexDirection: 'row',
-    gap: 6,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(46, 125, 50, 0.15)',
-  },
-  heroBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1f3b16',
-  },
   content: {
     padding: 24,
-  },
-  stepsCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 20,
-    shadowColor: '#4CAF50',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  stepsTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#2E7D32',
-    marginBottom: 8,
-  },
-  stepsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  stepItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 6,
-  },
-  stepLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1f3b16',
-    textAlign: 'center',
-  },
-  stepDivider: {
-    width: 1,
-    height: 36,
-    backgroundColor: 'rgba(46, 125, 50, 0.2)',
-    marginHorizontal: 8,
   },
   subtitle: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#1B5E20', // Vert foncé naturel
+    color: '#1B5E20',
     marginBottom: 8,
     letterSpacing: -0.3,
   },
   description: {
     fontSize: 16,
-    color: '#558B2F', // Vert olive doux
+    color: '#558B2F',
     lineHeight: 24,
-    marginBottom: 32,
+    marginBottom: 24,
   },
   textInput: {
     borderWidth: 1.5,
-    borderColor: 'rgba(76, 175, 80, 0.3)', // Vert doux transparent
+    borderColor: 'rgba(76, 175, 80, 0.3)',
     borderRadius: 18,
     padding: 18,
     fontSize: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Blanc légèrement transparent
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     minHeight: 120,
     textAlignVertical: 'top',
     marginBottom: 20,
@@ -506,7 +313,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#66BB6A', // Vert moyen doux
+    borderColor: '#66BB6A',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     gap: 10,
     shadowColor: '#4CAF50',
@@ -516,7 +323,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   photoButtonActive: {
-    backgroundColor: '#4CAF50', // Vert émeraude
+    backgroundColor: '#4CAF50',
     borderColor: '#2E7D32',
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -542,33 +349,6 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
   },
-  helperCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    backgroundColor: 'rgba(216, 241, 197, 0.9)',
-    padding: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(46, 125, 50, 0.12)',
-    shadowColor: '#4CAF50',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
-    marginBottom: 12,
-  },
-  helperTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#1f3b16',
-    marginBottom: 4,
-  },
-  helperText: {
-    fontSize: 13,
-    color: '#2E7D32',
-    lineHeight: 20,
-  },
   previewImage: {
     width: '100%',
     height: 220,
@@ -591,7 +371,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4CAF50', // Vert émeraude
+    backgroundColor: '#4CAF50',
     paddingVertical: 18,
     paddingHorizontal: 24,
     borderRadius: 16,
@@ -605,7 +385,7 @@ const styles = StyleSheet.create({
   },
   generateButtonDisabled: {
     opacity: 0.5,
-    backgroundColor: '#BDBDBD', // Gris doux
+    backgroundColor: '#BDBDBD',
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -616,4 +396,3 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 });
-
