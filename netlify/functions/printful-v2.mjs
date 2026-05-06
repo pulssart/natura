@@ -163,7 +163,7 @@ async function createPrintfulDraftOrder(event) {
   const creationName = requireField(fields, "creationName");
 
   const payload = {
-    external_id: `natura-${Date.now()}-${crypto.randomUUID()}`,
+    external_id: `natura-${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`,
     shipping: "STANDARD",
     recipient: {
       name: requireField(fields, "recipientName"),
