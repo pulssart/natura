@@ -218,9 +218,11 @@ async function createPrintfulDraftOrder(event) {
 
   const order = parsed?.data || parsed;
   const orderId = order?.id || order?.order_id;
-  const dashboardUrl = orderId
-    ? `https://www.printful.com/dashboard/default/orders/${orderId}`
-    : "https://www.printful.com/dashboard/default/orders";
+  const dashboardUrl = order?.dashboard_url || (
+    orderId
+      ? `https://www.printful.com/dashboard?order_id=${orderId}`
+      : "https://www.printful.com/dashboard"
+  );
 
   return json(200, {
     checkoutUrl: dashboardUrl,
