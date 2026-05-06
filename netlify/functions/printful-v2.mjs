@@ -25,10 +25,13 @@ function json(statusCode, body) {
 }
 
 function getRoutePath(eventPath) {
-  const marker = "/.netlify/functions/printful-v2";
-  const routePath = eventPath.startsWith(marker)
-    ? eventPath.slice(marker.length)
-    : eventPath;
+  const markers = [
+    "/.netlify/functions/printful-v2",
+    "/api/printful-v2",
+  ];
+
+  const marker = markers.find((prefix) => eventPath.startsWith(prefix));
+  const routePath = marker ? eventPath.slice(marker.length) : eventPath;
 
   return routePath || "/oauth-scopes";
 }
