@@ -159,6 +159,7 @@ async function createPrintfulDraftOrder(event) {
     return json(400, { error: "Invalid Printful variant" });
   }
 
+  const printfulPlacement = fields.printfulPlacement?.trim() || "default";
   const fileUrl = await uploadPrintFile(image);
   const creationName = requireField(fields, "creationName");
 
@@ -181,7 +182,7 @@ async function createPrintfulDraftOrder(event) {
         name: creationName,
         placements: [
           {
-            placement: "default",
+            placement: printfulPlacement,
             technique: "digital",
             layers: [
               {
