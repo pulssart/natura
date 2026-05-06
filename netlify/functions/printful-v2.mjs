@@ -1,5 +1,3 @@
-import { getStore } from "@netlify/blobs";
-
 const PRINTFUL_API_BASE = "https://api.printful.com/v2";
 const DEFAULT_STORE_ID = "18132950";
 
@@ -113,58 +111,6 @@ function requireField(fields, name) {
   return value;
 }
 
-function publicBaseUrl(event) {
-  const host = getHeader(event.headers, "host");
-  if (host) {
-    return `https://${host}`;
-  }
-
-  return process.env.URL || process.env.DEPLOY_PRIME_URL || "https://naturaaa.netlify.app";
-}
-
-async function storePrintFile(event, image) {
-  const extension = image.contentType.includes("png") ? "png" : "jpg";
-  const key = `${crypto.randomUUID()}.${extension}`;
-  const store = getStore("printful-print-files");
-
-  await store.set(key, image.data, {
-    metadata: {
-      contentType: image.contentType,
-      filename: image.filename,
-      createdAt: new Date().toISOString(),
-    },
-  });
-
-  return {
-    key,
-    url: `${publicBaseUrl(event)}/api/printful-v2/print-files/${key}`,
-  };
-}
-
-async function getPrintFile(routePath) {
-  const key = routePath.replace(/^\/print-files\//, "");
-  if (!/^[a-f0-9-]+\.(jpg|png)$/i.test(key)) {
-    return json(404, { error: "Print file not found" });
-  }
-
-  const store = getStore("printful-print-files");
-  const blob = await store.getWithMetadata(key, { type: "arrayBuffer" });
-
-  if (!blob?.data) {
-    return json(404, { error: "Print file not found" });
-  }
-
-  return {
-    statusCode: 200,
-    headers: {
-      "Content-Type": blob.metadata?.contentType || "image/jpeg",
-      "Cache-Control": "public, max-age=604800",
-    },
-    body: Buffer.from(blob.data).toString("base64"),
-    isBase64Encoded: true,
-  };
-}
-
 function printfulHeaders() {
   const token = process.env.PRINTFUL_TOKEN;
   if (!token) {
@@ -177,6 +123,26 @@ function printfulHeaders() {
     "Content-Type": "application/json",
     "X-PF-Store-Id": process.env.PRINTFUL_STORE_ID || DEFAULT_STORE_ID,
   };
+}
+
+async function uploadPrintFile(image) {
+  const form = new FormData();
+  const file = new Blob([image.data], { type: image.contentType });
+
+  form.append("file", file, image.filename || "natura-print.jpg");
+
+  const response = await fetch("https://tmpfiles.org/api/v1/upload", {
+    method: "POST",
+    body: form,
+  });
+  const payload = await response.json().catch(() => null);
+  const pageUrl = payload?.data?.url;
+
+  if (!response.ok || payload?.status !== "success" || !pageUrl) {
+    throw new Error("Print file upload failed");
+  }
+
+  return pageUrl.replace("http://tmpfiles.org/", "https://tmpfiles.org/dl/");
 }
 
 async function createPrintfulDraftOrder(event) {
@@ -193,7 +159,7 @@ async function createPrintfulDraftOrder(event) {
     return json(400, { error: "Invalid Printful variant" });
   }
 
-  const { url: fileUrl } = await storePrintFile(event, image);
+  const fileUrl = await uploadPrintFile(image);
   const creationName = requireField(fields, "creationName");
 
   const payload = {
@@ -274,10 +240,6 @@ export async function handler(event) {
   try {
     if (event.httpMethod === "POST" && routePath === "/print/checkout") {
       return await createPrintfulDraftOrder(event);
-    }
-
-    if (event.httpMethod === "GET" && routePath.startsWith("/print-files/")) {
-      return await getPrintFile(routePath);
     }
 
     if (event.httpMethod !== "GET") {
